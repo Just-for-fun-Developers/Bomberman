@@ -12,7 +12,7 @@ class PreloadScene extends Phaser.Scene {
       "toy",
       "assets/various/energy_spins/misc_energy_ball_fire.jpg"
     );
-    this.load.spritesheet('player', "assets/person/person1.png", {
+    this.load.spritesheet('player', "assets/person/bomberman_player.png", {
       frameWidth:32, frameHeight: 32
     });
   }
