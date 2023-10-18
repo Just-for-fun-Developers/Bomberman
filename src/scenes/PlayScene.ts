@@ -4,7 +4,7 @@ enum CellType {
   Blocked = "BLOCKED",
   Free = "FREE",
   Occupied = "OCCUPIED",
-  PlayerCell = "PLAYERCELL"
+  Player = "PLAYER",
 }
 
 class PlayScene extends Phaser.Scene {
@@ -13,19 +13,10 @@ class PlayScene extends Phaser.Scene {
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
-  isMoving:boolean;
+  isMoving: boolean;
   constructor() {
     super("PlayScene");
-    // TODO: Add enum for the type of cells
-    // TODO: Add function to create a 2D matrix dinamically
-    //       passing n, m, x
-    // Example of maze
-    // this.maze = [
-    //   [CellType.Blocked, CellType.Blocked, CellType.Free, CellType.Free],
-    //   [CellType.Blocked, CellType.Free, CellType.Free, CellType.Blocked],
-    //   [CellType.Free, CellType.Free, CellType.Blocked, CellType.Blocked],
-    // ];
-    this.isMoving=false;
+    this.isMoving = false;
   }
 
   create() {
@@ -46,7 +37,7 @@ class PlayScene extends Phaser.Scene {
       this.maze[row] = new Array(columns).fill(CellType.Free);
     }
     //To reserve the player position
-    this.maze[0][0] = CellType.PlayerCell;
+    this.maze[0][0] = CellType.Player;
 
     // To fill occupied cells
     while (occupied > 0) {
@@ -75,13 +66,13 @@ class PlayScene extends Phaser.Scene {
       row.forEach((cell, indexCol) => {
         if (this.getCell(cell) == "toy") {
           this.toys
-            .create((indexCol * 64)+64, (indexRow * 64)+64, "toy")
+            .create(indexCol * 64 + 64, indexRow * 64 + 64, "toy")
             .setImmovable(true)
             .setOrigin(0, 0)
             .setScale(this.getScale(cell));
-        } else if(this.getCell(cell)=="wood_cell"){
+        } else if (this.getCell(cell) == "wood_cell") {
           this.blocks
-            .create((indexCol * 64)+64, (indexRow * 64)+64, this.getCell(cell))
+            .create(indexCol * 64 + 64, indexRow * 64 + 64, this.getCell(cell))
             .setImmovable(true)
             .setOrigin(0.0)
             .setScale(this.getScale(cell));
@@ -89,32 +80,31 @@ class PlayScene extends Phaser.Scene {
       });
     });
     //to build the borders of the maze
-    for(let i=0; i<columns+2; i++){
+    for (let i = 0; i < columns + 2; i++) {
       this.blocks
-            .create(i * 64, 0, 'wood_cell')
-            .setImmovable(true)
-            .setOrigin(0.0)
-            .setScale(1/32);
+        .create(i * 64, 0, "wood_cell")
+        .setImmovable(true)
+        .setOrigin(0.0)
+        .setScale(1 / 32);
       this.blocks
-            .create(i * 64, (rows+1)*64, 'wood_cell')
-            .setImmovable(true)
-            .setOrigin(0.0)
-            .setScale(1/32);
+        .create(i * 64, (rows + 1) * 64, "wood_cell")
+        .setImmovable(true)
+        .setOrigin(0.0)
+        .setScale(1 / 32);
     }
-    for(let i=1; i<rows+1; i++){
+    for (let i = 1; i < rows + 1; i++) {
       this.blocks
-            .create(0, i * 64, 'wood_cell')
-            .setImmovable(true)
-            .setOrigin(0.0)
-            .setScale(1/32);
+        .create(0, i * 64, "wood_cell")
+        .setImmovable(true)
+        .setOrigin(0.0)
+        .setScale(1 / 32);
       this.blocks
-            .create((rows+1)*64, i * 64, 'wood_cell')
-            .setImmovable(true)
-            .setOrigin(0.0)
-            .setScale(1/32);
+        .create((rows + 1) * 64, i * 64, "wood_cell")
+        .setImmovable(true)
+        .setOrigin(0.0)
+        .setScale(1 / 32);
     }
   }
-
 
   // NOTE: check resolutions from the preloaded jpg
   //       files to understand this part
@@ -137,15 +127,15 @@ class PlayScene extends Phaser.Scene {
   }
 
   createPlayer() {
-
     this.player = this.physics.add
       .sprite(64, 64, "player")
       .setScale(2)
       .setOrigin(0, 0);
     this.player.body.gravity.y = 0;
     this.player.setCollideWorldBounds(true);
+
     //collider with blocks
-    this.physics.add.collider(this.player,this.blocks);
+    this.physics.add.collider(this.player, this.blocks);
     this.physics.add.overlap(
       this.player,
       this.toys,
@@ -187,9 +177,9 @@ class PlayScene extends Phaser.Scene {
     });
     this.cursors = this.input.keyboard.createCursorKeys();
   }
+
   playerInteraction() {
     if (this.cursors.left.isDown) {
-      console.log(this.isMoving);
       this.player.setVelocityX(-160);
       this.player.anims.play("walk_left", true);
     } else if (this.cursors.right.isDown) {
@@ -206,10 +196,12 @@ class PlayScene extends Phaser.Scene {
       this.player.setVelocityY(0);
       this.player.anims.play("turn");
     }
-    
   }
-  collectToy(player: any, toy: any) {
-    console.log(`collapse at:${toy.x} and ${toy.y}`);
+
+  collectToy(
+    player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody,
+    toy: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody
+  ) {
     toy.disableBody(true, true);
   }
 }
