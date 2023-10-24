@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { io } from "socket.io-client";
 
 enum CellType {
   Blocked = "BLOCKED",
@@ -14,12 +15,15 @@ class PlayScene extends Phaser.Scene {
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
   isMoving: boolean;
+  socket: any;
   constructor() {
     super("PlayScene");
     this.isMoving = false;
   }
 
   create() {
+    this.socket = io("http://localhost:3000");
+
     this.createBG();
     this.createMaze(10, 10, 30, 6);
     this.createPlayer();
