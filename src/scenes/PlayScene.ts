@@ -1,15 +1,15 @@
 import Phaser from "phaser";
 import { io } from "socket.io-client";
 
-enum CellType {
+/* enum CellType {
   Blocked = "BLOCKED",
   Free = "FREE",
   Occupied = "OCCUPIED",
   Player = "PLAYER",
-}
+} */
 
 class PlayScene extends Phaser.Scene {
-  maze: CellType[][] = [];
+  //maze: CellType[][] = [];
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   toys: Phaser.Physics.Arcade.Group;
@@ -25,7 +25,8 @@ class PlayScene extends Phaser.Scene {
     this.socket = io("http://localhost:3000");
 
     this.createBG();
-    this.createMaze(10, 10, 30, 6);
+    this.createMazeBySocket(5);
+    //this.createMaze(10, 10, 30, 6);
     this.createPlayer();
     this.animatePlayer();
   }
@@ -34,7 +35,65 @@ class PlayScene extends Phaser.Scene {
     this.playerInteraction();
   }
 
-  createMaze(rows: number, columns: number, occupied: number, toys: number) {
+  createMazeBySocket(toys: number) {
+    this.blocks = this.physics.add.group();
+    this.toys = this.physics.add.group();
+    this.socket.on("game_maze", (game_maze: any) => {      
+      for (let row = 0; row < game_maze.rows; row++) {
+        for (let col = 0; col < game_maze.columns; col++) {
+          const cellValue = game_maze.data[row][col];
+          if(cellValue === 1) {
+            this.blocks
+              .create(col * 64 + 64, row * 64 + 64, "wood_cell")
+              .setImmovable(true)
+              .setOrigin(0.0)
+              .setScale(1/32);
+          }
+        }
+      }
+      while (toys > 0) {
+        let randomValue = Phaser.Math.Between(0, game_maze.rows * game_maze.columns - 1);
+        const row = Math.floor(randomValue / game_maze.rows);
+        const col = Math.floor(randomValue % game_maze.columns);
+        const cellValue2 = game_maze.data[row][col];
+        if (cellValue2 === 0) {
+          this.toys
+            .create(col * 64 + 64, row * 64 + 64, "toy")
+            .setImmovable(true)
+            .setOrigin(0, 0)
+            .setScale(1/16);
+          toys--;
+        }
+      }
+      //to build the borders of the maze
+      for (let i = 0; i < game_maze.columns + 2; i++) {
+        this.blocks
+          .create(i * 64, 0, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+        this.blocks
+          .create(i * 64, (game_maze.rows + 1) * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+      }
+      for (let i = 1; i < game_maze.rows + 1; i++) {
+        this.blocks
+          .create(0, i * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+        this.blocks
+          .create((game_maze.rows + 1) * 64, i * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+      }
+    });
+  }
+
+  /* createMaze(rows: number, columns: number, occupied: number, toys: number) {
     this.maze = new Array(rows);
 
     for (let row = 0; row < rows; row++) {
@@ -108,21 +167,21 @@ class PlayScene extends Phaser.Scene {
         .setOrigin(0.0)
         .setScale(1 / 32);
     }
-  }
+  } */
 
   // NOTE: check resolutions from the preloaded jpg
   //       files to understand this part
-  getScale(cell: CellType) {
+  /* getScale(cell: CellType) {
     return cell === CellType.Occupied ? 1 / 16 : 1 / 32;
   }
-
-  getCell(cell: CellType) {
+ */
+/*   getCell(cell: CellType) {
     if (cell === CellType.Blocked) {
       return "wood_cell";
     } else if (cell === CellType.Occupied) {
       return "toy";
     }
-  }
+  } */
   createBG() {
     this.add
       .image(0, 0, "cloud_bg")
