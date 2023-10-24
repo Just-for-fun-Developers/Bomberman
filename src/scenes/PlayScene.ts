@@ -22,7 +22,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   create() {
-    this.socket = io();
+    this.socket = io("http://localhost:3000");
 
     this.createBG();
     this.createMaze(10, 10, 30, 6);
