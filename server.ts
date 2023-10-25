@@ -9,6 +9,8 @@ const io = new Server(httpServer, {
   },
 });
 
+const players:any = {};
+
 interface Maze {
   data: number[][];
   columns: number;
@@ -29,21 +31,55 @@ const game_maze: Maze = {
   columns: 8,
   rows: 8,
 };
-
+//To position a new player in a random free place
+function CreateNewPlayer(socketId: string) {
+  let isIn:boolean;
+  isIn = true;
+  while (isIn) {
+    const rangValue = game_maze.rows * game_maze.columns - 1;
+    let randomValue = Math.floor(Math.random()*rangValue);
+    const row = Math.floor(randomValue / game_maze.rows);
+    const col = Math.floor(randomValue % game_maze.columns);
+    if (game_maze.data[row][col] === 0) {
+      console.log(`rangVal: ${rangValue}, randomVal: ${randomValue}, row: ${row}- col: ${col}, game_maze.data: ${game_maze.data[row][col]}`)
+      game_maze.data[row][col] = 2;
+      players[socketId] = {
+        x:col,
+        y:row,
+        playerId: socketId
+      }
+      isIn = false;
+    }
+  }
+}
 
 io.on("connection", (socket) => {
   console.log(`connect ${socket.id}`);
+
+  CreateNewPlayer(socket.id);
 
   socket.on("ping", (cb) => {
     console.log("ping");
     cb();
   });
 
+  socket.emit("currentPlayers", players);
+  socket.broadcast.emit("newPlayer", players[socket.id]);
+
   socket.on("disconnect", () => {
     console.log(`disconnect ${socket.id}`);
+    delete players[socket.id];
+    io.emit("disconnect_player", socket.id);
   });
 
   socket.emit("game_maze", game_maze);
+
+  socket.on("playerMovement", (movementData) => {
+    players[socket.id].x = movementData.x;
+    players[socket.id].y = movementData.y;
+    // emit a message to all players about the player that moved
+    socket.broadcast.emit("playerMoved", players[socket.id]);
+  });
 });
 
 const PORT = 3000;

@@ -14,6 +14,7 @@ class PlayScene extends Phaser.Scene {
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
+  otherPlayers:Phaser.Physics.Arcade.Group;
   isMoving: boolean;
   socket: any;
   constructor() {
@@ -23,12 +24,37 @@ class PlayScene extends Phaser.Scene {
 
   create() {
     this.socket = io("http://localhost:3000");
-
+    this.otherPlayers = this.physics.add.group();
+    this.showPlayers();
     this.createBG();
     this.createMazeBySocket(5);
     //this.createMaze(10, 10, 30, 6);
-    this.createPlayer();
+    //this.createPlayer();
+    this.createOtherPlayer();
     this.animatePlayer();
+
+    this.socket.on("disconnect_player",  (playerId:any) => {
+      
+      this.otherPlayers.getChildren().forEach((otherPlayer:any) => {
+        const OtherPlayerId = otherPlayer.getData('playerId');
+        if (playerId === OtherPlayerId) {
+          console.log("destroy")
+          otherPlayer.destroy();
+        }
+      });
+      console.log(this.otherPlayers.getChildren())
+    });
+    
+    this.socket.on("playerMoved", (playerInfo:any) => {
+      console.log("PlayerMoved");
+      this.otherPlayers.getChildren().forEach( (otherPlayer:any) => {
+        const OtherPlayerId = otherPlayer.getData('playerId');
+        if (playerInfo.playerId === OtherPlayerId) {
+          //console.log("set pos!!!");
+          otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+        }
+      });
+    });
   }
 
   update() {
@@ -189,9 +215,9 @@ class PlayScene extends Phaser.Scene {
       .setScale(1 / 2);
   }
 
-  createPlayer() {
+  createPlayer(playerInfo:any) {
     this.player = this.physics.add
-      .sprite(64, 64, "player")
+      .sprite(playerInfo.x*64+64, playerInfo.y*64+64, "player")
       .setScale(2)
       .setOrigin(0, 0);
     this.player.body.gravity.y = 0;
@@ -206,6 +232,7 @@ class PlayScene extends Phaser.Scene {
       null,
       this
     );
+    
   }
 
   animatePlayer() {
@@ -242,22 +269,43 @@ class PlayScene extends Phaser.Scene {
   }
 
   playerInteraction() {
-    if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-160);
-      this.player.anims.play("walk_left", true);
-    } else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(160);
-      this.player.anims.play("walk_right", true);
-    } else if (this.cursors.up.isDown) {
-      this.player.setVelocityY(-160);
-      this.player.anims.play("walk_up", true);
-    } else if (this.cursors.down.isDown) {
-      this.player.setVelocityY(160);
-      this.player.anims.play("walk_down", true);
-    } else {
-      this.player.setVelocityX(0);
-      this.player.setVelocityY(0);
-      this.player.anims.play("turn");
+    if(this.player){
+      if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-160);
+        this.player.anims.play("walk_left", true);
+      } else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(160);
+        this.player.anims.play("walk_right", true);
+      } else if (this.cursors.up.isDown) {
+        this.player.setVelocityY(-160);
+        this.player.anims.play("walk_up", true);
+      } else if (this.cursors.down.isDown) {
+        this.player.setVelocityY(160);
+        this.player.anims.play("walk_down", true);
+      } else {
+        this.player.setVelocityX(0);
+        this.player.setVelocityY(0);
+        this.player.anims.play("turn");
+      }
+      // emit player movement
+      let x = this.player.x;
+      let y = this.player.y;
+      if (this.player.getData('oldPosition')) {
+        const oldPosition = this.player.getData('oldPosition');
+        //console.log(oldPosition)
+        if (x !== oldPosition.x || y !== oldPosition.y) {
+          console.log("enter!")
+          this.socket.emit("playerMovement", {
+            x: this.player.x,
+            y: this.player.y,
+          });
+        }
+      }
+      // save old position data
+      this.player.setData('oldPosition', {
+        x: this.player.x,
+        y: this.player.y,
+      });
     }
   }
 
@@ -266,6 +314,34 @@ class PlayScene extends Phaser.Scene {
     toy: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody
   ) {
     toy.disableBody(true, true);
+  }
+
+  createOtherPlayer() {
+    this.socket.on("newPlayer", (playerInfo:any) => {
+      this.addOtherPlayers(playerInfo);
+    });
+  }
+
+  addOtherPlayers(playerInfo:any) {
+    const otherPlayer = this.physics.add
+      .sprite(playerInfo.x*64+64, playerInfo.y*64+64, "otherPlayer")
+      .setOrigin(0, 0)
+      .setScale(2);
+    otherPlayer.setTint(0xff0000);
+    
+    otherPlayer.setData('playerId', playerInfo.playerId);
+    this.otherPlayers.add(otherPlayer);
+  }
+  showPlayers() {
+    this.socket.on("currentPlayers", (players:any) => {
+      Object.keys(players).forEach((id) => {
+        if (players[id].playerId === this.socket.id) {
+          this.createPlayer(players[id]);
+        } else {
+          this.addOtherPlayers(players[id]);
+        }
+      });
+    });
   }
 }
 
