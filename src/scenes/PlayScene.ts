@@ -115,7 +115,6 @@ class PlayScene extends Phaser.Scene {
       null,
       this
     );
-    console.log("create MP")
   }
 
   animatePlayer() {
@@ -153,23 +152,25 @@ class PlayScene extends Phaser.Scene {
 
   playerInteraction() {
     if (this.player) {
+      let action="turn";
       if (this.cursors.left.isDown) {
+        action = "walk_left";
         this.player.setVelocityX(-160);
-        this.player.anims.play("walk_left", true);
       } else if (this.cursors.right.isDown) {
+        action = "walk_right";
         this.player.setVelocityX(160);
-        this.player.anims.play("walk_right", true);
       } else if (this.cursors.up.isDown) {
+        action = "walk_up";
         this.player.setVelocityY(-160);
-        this.player.anims.play("walk_up", true);
       } else if (this.cursors.down.isDown) {
+        action = "walk_down";
         this.player.setVelocityY(160);
-        this.player.anims.play("walk_down", true);
       } else {
         this.player.setVelocityX(0);
         this.player.setVelocityY(0);
-        this.player.anims.play("turn");
       }
+
+      this.player.anims.play(action, true);
       // emit player movement
       let x = this.player.x;
       let y = this.player.y;
@@ -180,6 +181,13 @@ class PlayScene extends Phaser.Scene {
           this.socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
+            action: action,
+          });
+        }else{
+          this.socket.emit("playerMovement", {
+            x: this.player.x,
+            y: this.player.y,
+            action: action,
           });
         }
       }
@@ -213,11 +221,9 @@ class PlayScene extends Phaser.Scene {
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
-    console.log("create Other Player...")
   }
   showPlayers() {
     this.socket.on("currentPlayers", (players: any) => {
-      console.log(players)
       Object.keys(players).forEach((id) => {
         if (players[id].playerId === this.socket.id) {
           this.createPlayer(players[id]);
@@ -232,9 +238,22 @@ class PlayScene extends Phaser.Scene {
     this.socket.on("playerMoved", (playerInfo: any) => {
       this.otherPlayers.getChildren().forEach((otherPlayer: any) => {
         const OtherPlayerId = otherPlayer.getData("playerId");
-        if (playerInfo.playerId === OtherPlayerId) {
-          otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-          otherPlayer.anims.play("walk_left", true)
+        if (playerInfo.player.playerId === OtherPlayerId) {
+          if (otherPlayer) {
+            const action = playerInfo.action;
+            otherPlayer.setPosition(playerInfo.player.x, playerInfo.player.y);
+            if (action === "walk_left") {
+              otherPlayer.anims.play("walk_left", true);
+            } else if (action === "walk_right") {
+              otherPlayer.anims.play("walk_right", true);
+            } else if (action === "walk_up") {
+              otherPlayer.anims.play("walk_up", true);
+            } else if (action === "walk_down") {
+              otherPlayer.anims.play("walk_down", true);
+            } else {
+              otherPlayer.anims.play("turn");
+            }
+          }
         }
       });
     });

@@ -76,8 +76,7 @@ io.on("connection", (socket) => {
   socket.on("playerMovement", (movementData) => {
     players[socket.id].x = movementData.x;
     players[socket.id].y = movementData.y;
-    // emit a message to all players about the player that moved
-    socket.broadcast.emit("playerMoved", players[socket.id]);
+    socket.broadcast.emit("playerMoved", {player:players[socket.id], action: movementData.action});
   });
 });
 
