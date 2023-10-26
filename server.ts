@@ -41,7 +41,6 @@ function CreateNewPlayer(socketId: string) {
     const row = Math.floor(randomValue / game_maze.rows);
     const col = Math.floor(randomValue % game_maze.columns);
     if (game_maze.data[row][col] === 0) {
-      console.log(`rangVal: ${rangValue}, randomVal: ${randomValue}, row: ${row}- col: ${col}, game_maze.data: ${game_maze.data[row][col]}`)
       game_maze.data[row][col] = 2;
       players[socketId] = {
         x:col,
