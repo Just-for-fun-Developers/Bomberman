@@ -17,20 +17,8 @@ interface Maze {
   rows: number;
 }
 
-const game_maze: Maze = {
-  data: [
-    [0, 1, 1, 0, 0, 1, 0, 0],
-    [0, 1, 0, 1, 0, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 1, 1, 0, 1, 1, 0],
-    [0, 1, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 1, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 1, 0, 1, 0, 0],
-  ],
-  columns: 8,
-  rows: 8,
-};
+let game_maze: Maze = {} as Maze;
+
 //To position a new player in a random free place
 function CreateNewPlayer(socketId: string) {
   let isIn: boolean;
@@ -59,12 +47,12 @@ const PERCENTAGE_OCCUPIED = 0.5;
 io.on("connection", (socket) => {
   console.log(`connect ${socket.id}`);
 
-  CreateNewPlayer(socket.id);
   if (newMaze === undefined) {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
+    game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
 
-  socket.emit("maze", { maze: newMaze, rows: ROWS, cols: COLS });
+  CreateNewPlayer(socket.id);
 
   socket.on("ping", (cb) => {
     console.log("ping");
