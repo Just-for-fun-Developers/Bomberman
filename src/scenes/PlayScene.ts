@@ -100,7 +100,7 @@ class PlayScene extends Phaser.Scene {
 
   createPlayer(playerInfo: any) {
     this.player = this.physics.add
-      .sprite(playerInfo.x * 64 + 64, playerInfo.y * 64 + 64, "player")
+      .sprite(playerInfo.x, playerInfo.y, "player")
       .setScale(2)
       .setOrigin(0, 0);
     this.player.body.gravity.y = 0;
@@ -115,6 +115,7 @@ class PlayScene extends Phaser.Scene {
       null,
       this
     );
+    console.log("create MP")
   }
 
   animatePlayer() {
@@ -205,16 +206,18 @@ class PlayScene extends Phaser.Scene {
 
   addOtherPlayers(playerInfo: any) {
     const otherPlayer = this.physics.add
-      .sprite(playerInfo.x * 64 + 64, playerInfo.y * 64 + 64, "otherPlayer")
+      .sprite(playerInfo.x, playerInfo.y, "otherPlayer")
       .setOrigin(0, 0)
       .setScale(2);
     otherPlayer.setTint(0xff0000);
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
+    console.log("create Other Player...")
   }
   showPlayers() {
     this.socket.on("currentPlayers", (players: any) => {
+      console.log(players)
       Object.keys(players).forEach((id) => {
         if (players[id].playerId === this.socket.id) {
           this.createPlayer(players[id]);
@@ -231,6 +234,7 @@ class PlayScene extends Phaser.Scene {
         const OtherPlayerId = otherPlayer.getData("playerId");
         if (playerInfo.playerId === OtherPlayerId) {
           otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+          otherPlayer.anims.play("walk_left", true)
         }
       });
     });
