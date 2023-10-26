@@ -1,19 +1,12 @@
 import Phaser from "phaser";
 import { io } from "socket.io-client";
 
-enum CellType {
-  Blocked = "BLOCKED",
-  Free = "FREE",
-  Occupied = "OCCUPIED",
-  Player = "PLAYER",
-}
-
 class PlayScene extends Phaser.Scene {
-  maze: CellType[][] = [];
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
+  otherPlayers: Phaser.Physics.Arcade.Group;
   isMoving: boolean;
   socket: any;
   constructor() {
@@ -23,106 +16,81 @@ class PlayScene extends Phaser.Scene {
 
   create() {
     this.socket = io("http://localhost:3000");
-
+    this.otherPlayers = this.physics.add.group();
+    this.showPlayers();
     this.createBG();
-    this.createMaze(10, 10, 30, 6);
-    this.createPlayer();
+    this.createMazeBySocket(5);
+    this.createOtherPlayer();
     this.animatePlayer();
+    this.detectPlayerMovement();
+    this.detectDisconnectedPlayer();
   }
 
   update() {
     this.playerInteraction();
   }
 
-  createMaze(rows: number, columns: number, occupied: number, toys: number) {
-    this.maze = new Array(rows);
-
-    for (let row = 0; row < rows; row++) {
-      this.maze[row] = new Array(columns).fill(CellType.Free);
-    }
-    //To reserve the player position
-    this.maze[0][0] = CellType.Player;
-
-    // To fill occupied cells
-    while (occupied > 0) {
-      let randomValue = Phaser.Math.Between(0, rows * columns - 1);
-      const row = Math.floor(randomValue / rows);
-      const col = Math.floor(randomValue % columns);
-      if (this.maze[row][col] === CellType.Free) {
-        this.maze[row][col] = CellType.Blocked;
-        occupied--;
-      }
-    }
-
-    // To fill objects to collect
-    while (toys > 0) {
-      let randomValue = Phaser.Math.Between(0, rows * columns - 1);
-      const row = Math.floor(randomValue / rows);
-      const col = Math.floor(randomValue % columns);
-      if (this.maze[row][col] === CellType.Free) {
-        this.maze[row][col] = CellType.Occupied;
-        toys--;
-      }
-    }
+  createMazeBySocket(toys: number) {
     this.blocks = this.physics.add.group();
     this.toys = this.physics.add.group();
-    this.maze.forEach((row, indexRow) => {
-      row.forEach((cell, indexCol) => {
-        if (this.getCell(cell) == "toy") {
+    this.socket.on("game_maze", (game_maze: any) => {
+      for (let row = 0; row < game_maze.rows; row++) {
+        for (let col = 0; col < game_maze.columns; col++) {
+          const cellValue = game_maze.data[row][col];
+          if (cellValue === 1) {
+            this.blocks
+              .create(col * 64 + 64, row * 64 + 64, "wood_cell")
+              .setImmovable(true)
+              .setOrigin(0.0)
+              .setScale(1 / 32);
+          }
+        }
+      }
+      while (toys > 0) {
+        let randomValue = Phaser.Math.Between(
+          0,
+          game_maze.rows * game_maze.columns - 1
+        );
+        const row = Math.floor(randomValue / game_maze.rows);
+        const col = Math.floor(randomValue % game_maze.columns);
+        const cellValue2 = game_maze.data[row][col];
+        if (cellValue2 === 0) {
           this.toys
-            .create(indexCol * 64 + 64, indexRow * 64 + 64, "toy")
+            .create(col * 64 + 64, row * 64 + 64, "toy")
             .setImmovable(true)
             .setOrigin(0, 0)
-            .setScale(this.getScale(cell));
-        } else if (this.getCell(cell) == "wood_cell") {
-          this.blocks
-            .create(indexCol * 64 + 64, indexRow * 64 + 64, this.getCell(cell))
-            .setImmovable(true)
-            .setOrigin(0.0)
-            .setScale(this.getScale(cell));
+            .setScale(1 / 16);
+          toys--;
         }
-      });
+      }
+      //to build the borders of the maze
+      for (let i = 0; i < game_maze.columns + 2; i++) {
+        this.blocks
+          .create(i * 64, 0, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+        this.blocks
+          .create(i * 64, (game_maze.rows + 1) * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+      }
+      for (let i = 1; i < game_maze.rows + 1; i++) {
+        this.blocks
+          .create(0, i * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+        this.blocks
+          .create((game_maze.rows + 1) * 64, i * 64, "wood_cell")
+          .setImmovable(true)
+          .setOrigin(0.0)
+          .setScale(1 / 32);
+      }
     });
-    //to build the borders of the maze
-    for (let i = 0; i < columns + 2; i++) {
-      this.blocks
-        .create(i * 64, 0, "wood_cell")
-        .setImmovable(true)
-        .setOrigin(0.0)
-        .setScale(1 / 32);
-      this.blocks
-        .create(i * 64, (rows + 1) * 64, "wood_cell")
-        .setImmovable(true)
-        .setOrigin(0.0)
-        .setScale(1 / 32);
-    }
-    for (let i = 1; i < rows + 1; i++) {
-      this.blocks
-        .create(0, i * 64, "wood_cell")
-        .setImmovable(true)
-        .setOrigin(0.0)
-        .setScale(1 / 32);
-      this.blocks
-        .create((rows + 1) * 64, i * 64, "wood_cell")
-        .setImmovable(true)
-        .setOrigin(0.0)
-        .setScale(1 / 32);
-    }
   }
 
-  // NOTE: check resolutions from the preloaded jpg
-  //       files to understand this part
-  getScale(cell: CellType) {
-    return cell === CellType.Occupied ? 1 / 16 : 1 / 32;
-  }
-
-  getCell(cell: CellType) {
-    if (cell === CellType.Blocked) {
-      return "wood_cell";
-    } else if (cell === CellType.Occupied) {
-      return "toy";
-    }
-  }
   createBG() {
     this.add
       .image(0, 0, "cloud_bg")
@@ -130,9 +98,9 @@ class PlayScene extends Phaser.Scene {
       .setScale(1 / 2);
   }
 
-  createPlayer() {
+  createPlayer(playerInfo: any) {
     this.player = this.physics.add
-      .sprite(64, 64, "player")
+      .sprite(playerInfo.x * 64 + 64, playerInfo.y * 64 + 64, "player")
       .setScale(2)
       .setOrigin(0, 0);
     this.player.body.gravity.y = 0;
@@ -183,22 +151,42 @@ class PlayScene extends Phaser.Scene {
   }
 
   playerInteraction() {
-    if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-160);
-      this.player.anims.play("walk_left", true);
-    } else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(160);
-      this.player.anims.play("walk_right", true);
-    } else if (this.cursors.up.isDown) {
-      this.player.setVelocityY(-160);
-      this.player.anims.play("walk_up", true);
-    } else if (this.cursors.down.isDown) {
-      this.player.setVelocityY(160);
-      this.player.anims.play("walk_down", true);
-    } else {
-      this.player.setVelocityX(0);
-      this.player.setVelocityY(0);
-      this.player.anims.play("turn");
+    if (this.player) {
+      if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-160);
+        this.player.anims.play("walk_left", true);
+      } else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(160);
+        this.player.anims.play("walk_right", true);
+      } else if (this.cursors.up.isDown) {
+        this.player.setVelocityY(-160);
+        this.player.anims.play("walk_up", true);
+      } else if (this.cursors.down.isDown) {
+        this.player.setVelocityY(160);
+        this.player.anims.play("walk_down", true);
+      } else {
+        this.player.setVelocityX(0);
+        this.player.setVelocityY(0);
+        this.player.anims.play("turn");
+      }
+      // emit player movement
+      let x = this.player.x;
+      let y = this.player.y;
+      if (this.player.getData("oldPosition")) {
+        const oldPosition = this.player.getData("oldPosition");
+        if (x !== oldPosition.x || y !== oldPosition.y) {
+          console.log("enter!");
+          this.socket.emit("playerMovement", {
+            x: this.player.x,
+            y: this.player.y,
+          });
+        }
+      }
+      // save old position data
+      this.player.setData("oldPosition", {
+        x: this.player.x,
+        y: this.player.y,
+      });
     }
   }
 
@@ -207,6 +195,56 @@ class PlayScene extends Phaser.Scene {
     toy: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody
   ) {
     toy.disableBody(true, true);
+  }
+
+  createOtherPlayer() {
+    this.socket.on("newPlayer", (playerInfo: any) => {
+      this.addOtherPlayers(playerInfo);
+    });
+  }
+
+  addOtherPlayers(playerInfo: any) {
+    const otherPlayer = this.physics.add
+      .sprite(playerInfo.x * 64 + 64, playerInfo.y * 64 + 64, "otherPlayer")
+      .setOrigin(0, 0)
+      .setScale(2);
+    otherPlayer.setTint(0xff0000);
+
+    otherPlayer.setData("playerId", playerInfo.playerId);
+    this.otherPlayers.add(otherPlayer);
+  }
+  showPlayers() {
+    this.socket.on("currentPlayers", (players: any) => {
+      Object.keys(players).forEach((id) => {
+        if (players[id].playerId === this.socket.id) {
+          this.createPlayer(players[id]);
+        } else {
+          this.addOtherPlayers(players[id]);
+        }
+      });
+    });
+  }
+
+  detectPlayerMovement() {
+    this.socket.on("playerMoved", (playerInfo: any) => {
+      this.otherPlayers.getChildren().forEach((otherPlayer: any) => {
+        const OtherPlayerId = otherPlayer.getData("playerId");
+        if (playerInfo.playerId === OtherPlayerId) {
+          otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+        }
+      });
+    });
+  }
+
+  detectDisconnectedPlayer() {
+    this.socket.on("disconnect_player", (playerId: any) => {
+      this.otherPlayers.getChildren().forEach((otherPlayer: any) => {
+        const OtherPlayerId = otherPlayer.getData("playerId");
+        if (playerId === OtherPlayerId) {
+          otherPlayer.destroy();
+        }
+      });
+    });
   }
 }
 

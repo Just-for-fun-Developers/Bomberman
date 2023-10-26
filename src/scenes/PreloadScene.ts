@@ -15,6 +15,9 @@ class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('player', "assets/person/bomberman_player.png", {
       frameWidth:32, frameHeight: 32
     });
+    this.load.spritesheet('otherPlayer', "assets/person/bomberman_player.png", {
+      frameWidth:32, frameHeight: 32
+    });
   }
 
   create() {
