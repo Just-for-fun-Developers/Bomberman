@@ -43,8 +43,8 @@ function CreateNewPlayer(socketId: string) {
     if (game_maze.data[row][col] === 0) {
       game_maze.data[row][col] = 2;
       players[socketId] = {
-        x:col,
-        y:row,
+        x:col * 64 + 64,
+        y:row * 64 + 64,
         playerId: socketId
       }
       isIn = false;
@@ -76,8 +76,7 @@ io.on("connection", (socket) => {
   socket.on("playerMovement", (movementData) => {
     players[socket.id].x = movementData.x;
     players[socket.id].y = movementData.y;
-    // emit a message to all players about the player that moved
-    socket.broadcast.emit("playerMoved", players[socket.id]);
+    socket.broadcast.emit("playerMoved", {player:players[socket.id], action: movementData.action});
   });
 });
 
