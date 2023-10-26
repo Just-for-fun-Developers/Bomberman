@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
+import { Maze, PlayerInfo } from "../common/interfaces";
 
 class PlayScene extends Phaser.Scene {
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -8,7 +9,8 @@ class PlayScene extends Phaser.Scene {
   blocks: Phaser.Physics.Arcade.Group;
   otherPlayers: Phaser.Physics.Arcade.Group;
   isMoving: boolean;
-  socket: any;
+  socket: Socket;
+
   constructor() {
     super("PlayScene");
     this.isMoving = false;
@@ -33,7 +35,7 @@ class PlayScene extends Phaser.Scene {
   createMazeBySocket(toys: number) {
     this.blocks = this.physics.add.group();
     this.toys = this.physics.add.group();
-    this.socket.on("game_maze", (game_maze: any) => {
+    this.socket.on("game_maze", (game_maze: Maze) => {
       for (let row = 0; row < game_maze.rows; row++) {
         for (let col = 0; col < game_maze.columns; col++) {
           const cellValue = game_maze.data[row][col];
@@ -98,7 +100,7 @@ class PlayScene extends Phaser.Scene {
       .setScale(1 / 2);
   }
 
-  createPlayer(playerInfo: any) {
+  createPlayer(playerInfo: PlayerInfo) {
     this.player = this.physics.add
       .sprite(playerInfo.x, playerInfo.y, "player")
       .setScale(2)
@@ -152,7 +154,7 @@ class PlayScene extends Phaser.Scene {
 
   playerInteraction() {
     if (this.player) {
-      let action="turn";
+      let action = "turn";
       if (this.cursors.left.isDown) {
         action = "walk_left";
         this.player.setVelocityX(-160);
@@ -183,7 +185,7 @@ class PlayScene extends Phaser.Scene {
             y: this.player.y,
             action: action,
           });
-        }else{
+        } else {
           this.socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
@@ -207,12 +209,12 @@ class PlayScene extends Phaser.Scene {
   }
 
   createOtherPlayer() {
-    this.socket.on("newPlayer", (playerInfo: any) => {
+    this.socket.on("newPlayer", (playerInfo: PlayerInfo) => {
       this.addOtherPlayers(playerInfo);
     });
   }
 
-  addOtherPlayers(playerInfo: any) {
+  addOtherPlayers(playerInfo: PlayerInfo) {
     const otherPlayer = this.physics.add
       .sprite(playerInfo.x, playerInfo.y, "otherPlayer")
       .setOrigin(0, 0)
@@ -223,50 +225,63 @@ class PlayScene extends Phaser.Scene {
     this.otherPlayers.add(otherPlayer);
   }
   showPlayers() {
-    this.socket.on("currentPlayers", (players: any) => {
-      Object.keys(players).forEach((id) => {
-        if (players[id].playerId === this.socket.id) {
-          this.createPlayer(players[id]);
-        } else {
-          this.addOtherPlayers(players[id]);
-        }
-      });
-    });
+    this.socket.on(
+      "currentPlayers",
+      (players: { [key: string]: PlayerInfo }) => {
+        Object.keys(players).forEach((id) => {
+          if (players[id].playerId === this.socket.id) {
+            this.createPlayer(players[id]);
+          } else {
+            this.addOtherPlayers(players[id]);
+          }
+        });
+      }
+    );
   }
 
   detectPlayerMovement() {
-    this.socket.on("playerMoved", (playerInfo: any) => {
-      this.otherPlayers.getChildren().forEach((otherPlayer: any) => {
-        const OtherPlayerId = otherPlayer.getData("playerId");
-        if (playerInfo.player.playerId === OtherPlayerId) {
-          if (otherPlayer) {
-            const action = playerInfo.action;
-            otherPlayer.setPosition(playerInfo.player.x, playerInfo.player.y);
-            if (action === "walk_left") {
-              otherPlayer.anims.play("walk_left", true);
-            } else if (action === "walk_right") {
-              otherPlayer.anims.play("walk_right", true);
-            } else if (action === "walk_up") {
-              otherPlayer.anims.play("walk_up", true);
-            } else if (action === "walk_down") {
-              otherPlayer.anims.play("walk_down", true);
-            } else {
-              otherPlayer.anims.play("turn");
+    this.socket.on(
+      "playerMoved",
+      (playerInfo: { player: PlayerInfo; action: string }) => {
+        this.otherPlayers
+          .getChildren()
+          .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
+            const OtherPlayerId = otherPlayer.getData("playerId");
+            if (playerInfo.player.playerId === OtherPlayerId) {
+              if (otherPlayer) {
+                const action = playerInfo.action;
+                otherPlayer.setPosition(
+                  playerInfo.player.x,
+                  playerInfo.player.y
+                );
+                if (action === "walk_left") {
+                  otherPlayer.anims.play("walk_left", true);
+                } else if (action === "walk_right") {
+                  otherPlayer.anims.play("walk_right", true);
+                } else if (action === "walk_up") {
+                  otherPlayer.anims.play("walk_up", true);
+                } else if (action === "walk_down") {
+                  otherPlayer.anims.play("walk_down", true);
+                } else {
+                  otherPlayer.anims.play("turn");
+                }
+              }
             }
-          }
-        }
-      });
-    });
+          });
+      }
+    );
   }
 
   detectDisconnectedPlayer() {
-    this.socket.on("disconnect_player", (playerId: any) => {
-      this.otherPlayers.getChildren().forEach((otherPlayer: any) => {
-        const OtherPlayerId = otherPlayer.getData("playerId");
-        if (playerId === OtherPlayerId) {
-          otherPlayer.destroy();
-        }
-      });
+    this.socket.on("disconnect_player", (playerId: string) => {
+      this.otherPlayers
+        .getChildren()
+        .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
+          const OtherPlayerId = otherPlayer.getData("playerId");
+          if (playerId === OtherPlayerId) {
+            otherPlayer.destroy();
+          }
+        });
     });
   }
 }
