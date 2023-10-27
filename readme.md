@@ -1,25 +1,25 @@
-# Simple Phaser3 with TS Template
+# Bomberman Multiplayer Phaser3 Game
 
 ## Setup
 
-1. If you don’t have Node.js installed, [install it from here](https://nodejs.org/en/) (Node.js version >= 14.6.0 required)
+### Requesities
 
-2. Clone this repository or Download
+If you don’t have Node.js installed, [install it from here](https://nodejs.org/en/) (Node.js version >= 14.6.0 required)
 
-3. Navigate into the project directory
-
-```bash
-  $ cd phaser3-typescript-simple-template
-```
-
-4. Install the requirements
+### Install the requirements
 
 ```bash
   $ npm install
 ```
 
-5. Run the app
+### Run the client-side app
 
 ```bash
   $ npm run dev
+```
+
+### Run the server-side socket-io app
+
+```bash
+  $ npm run start:socket
 ```
