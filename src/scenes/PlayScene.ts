@@ -149,7 +149,38 @@ class PlayScene extends Phaser.Scene {
       frames: [{ key: "player", frame: 0 }],
       frameRate: 20,
     });
+    this.anims.create({
+      key: 'explode',
+      frames: 'explosion',
+      frameRate: 30,
+      /* repeat: -1,
+      repeatDelay: 2000
+ */
+    })
     this.cursors = this.input.keyboard.createCursorKeys();
+    this.input.keyboard.on('keydown-SPACE', () => {
+      const bomb = this.add.sprite(this.player.x+32, this.player.y+32, 'bomb')
+      .setScale(2.5);
+      let explosions = this.physics.add.group();
+
+      this.time.delayedCall(2000, () => {
+        bomb.destroy();
+        for(let i=0; i<3; i++){
+          const explosion1 = explosions.create(bomb.x+64*i, bomb.y, 'explosion');
+          explosion1.anims.play('explode');
+          const explosion2 = explosions.create(bomb.x-64*i, bomb.y, 'explosion');
+          explosion2.anims.play('explode');
+          const explosion3 = explosions.create(bomb.x, bomb.y+64*i, 'explosion');
+          explosion3.anims.play('explode');
+          const explosion4 = explosions.create(bomb.x, bomb.y-64*i, 'explosion');
+          explosion4.anims.play('explode');
+        }
+        
+      })
+      /* this.time.delayedCall(1000, () => {
+        explosions.destroy();
+      }) */
+    })
   }
 
   playerInteraction() {
