@@ -23,9 +23,13 @@ class PlayScene extends Phaser.Scene {
     this.createBG();
     this.createMazeBySocket(5);
     this.createOtherPlayer();
+    this.animateBomb();
     this.animatePlayer();
     this.detectPlayerMovement();
     this.detectDisconnectedPlayer();
+
+    this.bombInteraction();
+    this.bombActivated();
   }
 
   update() {
@@ -119,6 +123,17 @@ class PlayScene extends Phaser.Scene {
     );
   }
 
+  animateBomb() {
+    this.anims.create({
+      key: "explode",
+      frames: "explosion",
+      frameRate: 30,
+      /* repeat: -1,
+      repeatDelay: 2000
+ */
+    });
+  }
+
   animatePlayer() {
     this.anims.create({
       key: "walk_right",
@@ -149,38 +164,69 @@ class PlayScene extends Phaser.Scene {
       frames: [{ key: "player", frame: 0 }],
       frameRate: 20,
     });
-    this.anims.create({
-      key: 'explode',
-      frames: 'explosion',
-      frameRate: 30,
-      /* repeat: -1,
-      repeatDelay: 2000
- */
-    })
+
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.input.keyboard.on('keydown-SPACE', () => {
-      const bomb = this.add.sprite(this.player.x+32, this.player.y+32, 'bomb')
-      .setScale(2.5);
+  }
+
+  bombActivated() {
+    this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
+      const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
+
       let explosions = this.physics.add.group();
 
+      // Capture the time before the delayedCall
+      const startTime = new Date().getTime();
+
+      console.log("Time before delayedCall:", startTime);
+
       this.time.delayedCall(2000, () => {
-        bomb.destroy();
-        for(let i=0; i<3; i++){
-          const explosion1 = explosions.create(bomb.x+64*i, bomb.y, 'explosion');
-          explosion1.anims.play('explode');
-          const explosion2 = explosions.create(bomb.x-64*i, bomb.y, 'explosion');
-          explosion2.anims.play('explode');
-          const explosion3 = explosions.create(bomb.x, bomb.y+64*i, 'explosion');
-          explosion3.anims.play('explode');
-          const explosion4 = explosions.create(bomb.x, bomb.y-64*i, 'explosion');
-          explosion4.anims.play('explode');
+        // Capture the time inside the callback
+        const endTime = new Date().getTime();
+
+        console.log("Time inside callback:", endTime);
+        console.log("Time spent:", endTime - startTime, "milliseconds");
+
+        bombSprite.destroy();
+        for (let i = 0; i < 3; i++) {
+          const explosion1 = explosions.create(
+            bomb.x + 64 * i,
+            bomb.y,
+            "explosion"
+          );
+          explosion1.anims.play("explode");
+          const explosion2 = explosions.create(
+            bomb.x - 64 * i,
+            bomb.y,
+            "explosion"
+          );
+          explosion2.anims.play("explode");
+          const explosion3 = explosions.create(
+            bomb.x,
+            bomb.y + 64 * i,
+            "explosion"
+          );
+          explosion3.anims.play("explode");
+          const explosion4 = explosions.create(
+            bomb.x,
+            bomb.y - 64 * i,
+            "explosion"
+          );
+          explosion4.anims.play("explode");
         }
-        
-      })
+      });
       /* this.time.delayedCall(1000, () => {
         explosions.destroy();
       }) */
-    })
+    });
+  }
+
+  bombInteraction() {
+    this.input.keyboard.on("keydown-SPACE", () => {
+      this.socket.emit("bomb_activated", {
+        x: this.player.x + 32,
+        y: this.player.y + 32,
+      });
+    });
   }
 
   playerInteraction() {

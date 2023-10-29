@@ -55,6 +55,10 @@ io.on("connection", (socket) => {
     cb();
   });
 
+  socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
+    io.emit("bomb_activated", bomb);
+  });
+
   socket.emit("currentPlayers", players);
   socket.broadcast.emit("newPlayer", players[socket.id]);
 
