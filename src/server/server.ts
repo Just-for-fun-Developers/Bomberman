@@ -6,7 +6,8 @@ import { Maze, PlayerInfo } from "../common/interfaces";
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://127.0.0.1:8080",
+    // QUESTION: Why do you think I change this to *?
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
@@ -53,6 +54,10 @@ io.on("connection", (socket) => {
   socket.on("ping", (cb) => {
     console.log("ping");
     cb();
+  });
+
+  socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
+    io.emit("bomb_activated", bomb);
   });
 
   socket.emit("currentPlayers", players);
