@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { io, Socket } from "socket.io-client";
-import { Maze, PlayerInfo } from "../common/interfaces";
+import { directions, Maze, PlayerInfo } from "../common/interfaces";
 
 class PlayScene extends Phaser.Scene {
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -17,11 +17,13 @@ class PlayScene extends Phaser.Scene {
   }
 
   create() {
-    this.socket = io("http://localhost:3000");
+    // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
+    // For now we can create global variables and it as a global variable with your local static IP
+    this.socket = io("http://192.168.1.105:3000");
     this.otherPlayers = this.physics.add.group();
     this.showPlayers();
     this.createBG();
-    this.createMazeBySocket(5);
+    this.createMazeBySocket();
     this.createOtherPlayer();
     this.animateBomb();
     this.animatePlayer();
@@ -36,9 +38,8 @@ class PlayScene extends Phaser.Scene {
     this.playerInteraction();
   }
 
-  createMazeBySocket(toys: number) {
+  createMazeBySocket() {
     this.blocks = this.physics.add.group();
-    this.toys = this.physics.add.group();
     this.socket.on("game_maze", (game_maze: Maze) => {
       for (let row = 0; row < game_maze.rows; row++) {
         for (let col = 0; col < game_maze.columns; col++) {
@@ -50,23 +51,6 @@ class PlayScene extends Phaser.Scene {
               .setOrigin(0.0)
               .setScale(1 / 32);
           }
-        }
-      }
-      while (toys > 0) {
-        let randomValue = Phaser.Math.Between(
-          0,
-          game_maze.rows * game_maze.columns - 1
-        );
-        const row = Math.floor(randomValue / game_maze.rows);
-        const col = Math.floor(randomValue % game_maze.columns);
-        const cellValue2 = game_maze.data[row][col];
-        if (cellValue2 === 0) {
-          this.toys
-            .create(col * 64 + 64, row * 64 + 64, "toy")
-            .setImmovable(true)
-            .setOrigin(0, 0)
-            .setScale(1 / 16);
-          toys--;
         }
       }
       //to build the borders of the maze
@@ -95,6 +79,27 @@ class PlayScene extends Phaser.Scene {
           .setScale(1 / 32);
       }
     });
+  }
+
+  createToys(toys: number, game_maze: Maze) {
+    this.toys = this.physics.add.group();
+    while (toys > 0) {
+      let randomValue = Phaser.Math.Between(
+        0,
+        game_maze.rows * game_maze.columns - 1
+      );
+      const row = Math.floor(randomValue / game_maze.rows);
+      const col = Math.floor(randomValue % game_maze.columns);
+      const cellValue2 = game_maze.data[row][col];
+      if (cellValue2 === 0) {
+        this.toys
+          .create(col * 64 + 64, row * 64 + 64, "toy")
+          .setImmovable(true)
+          .setOrigin(0, 0)
+          .setScale(1 / 16);
+        toys--;
+      }
+    }
   }
 
   createBG() {
@@ -168,51 +173,71 @@ class PlayScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
   }
 
+  checkOverlapWithBlocksAt(x: number, y: number) {
+    // Create a small temporary sprite at the position
+    let tempSprite = this.physics.add
+      .sprite(x, y, null)
+      .setSize(1, 1)
+      .setOrigin(0, 0);
+
+    // Check overlap
+    let isOverlapping = false;
+    this.physics.overlap(tempSprite, this.blocks, () => {
+      isOverlapping = true;
+    });
+
+    // Destroy the temporary sprite
+    tempSprite.destroy();
+
+    return isOverlapping;
+  }
+
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
 
       let explosions = this.physics.add.group();
 
-      // Capture the time before the delayedCall
-      const startTime = new Date().getTime();
+      // QUESTION: Should we mode the explotion to the server side
+      // it means when the bomb explote we send a message bomb_explote and launch this part of the code
+      // Check answer from chatGPT
 
-      console.log("Time before delayedCall:", startTime);
-
+      /*
+        Server Authoritative Model: Instead of relying on each client to determine the timing of the explosion,
+        you can have a central server that determines when events like the bomb explosion should occur.
+        The server then sends this information to all clients, ensuring synchronization.
+        */
       this.time.delayedCall(2000, () => {
-        // Capture the time inside the callback
-        const endTime = new Date().getTime();
-
-        console.log("Time inside callback:", endTime);
-        console.log("Time spent:", endTime - startTime, "milliseconds");
-
         bombSprite.destroy();
-        for (let i = 0; i < 3; i++) {
-          const explosion1 = explosions.create(
-            bomb.x + 64 * i,
-            bomb.y,
-            "explosion"
-          );
-          explosion1.anims.play("explode");
-          const explosion2 = explosions.create(
-            bomb.x - 64 * i,
-            bomb.y,
-            "explosion"
-          );
-          explosion2.anims.play("explode");
-          const explosion3 = explosions.create(
-            bomb.x,
-            bomb.y + 64 * i,
-            "explosion"
-          );
-          explosion3.anims.play("explode");
-          const explosion4 = explosions.create(
-            bomb.x,
-            bomb.y - 64 * i,
-            "explosion"
-          );
-          explosion4.anims.play("explode");
+
+        for (let direction of directions) {
+          for (let i = 0; i < 3; i++) {
+            const newX = bomb.x + 64 * i * direction.x;
+            const newY = bomb.y + 64 * i * direction.y;
+            if (!this.checkOverlapWithBlocksAt(newX, newY)) {
+              let explotion = explosions
+                .create(newX, newY, "explosion")
+                .anims.play("explode");
+
+              // Delete sprites after animation finish
+              explotion.on("animationcomplete", () => {
+                explotion.destroy();
+              });
+            } else {
+              // QUESTION: Why I added this break?
+              break;
+            }
+          }
         }
+
+        // Set up overlap check between explosions and player
+        this.physics.add.overlap(
+          this.player,
+          explosions,
+          this.playerHitByExplosion,
+          null,
+          this
+        );
       });
       /* this.time.delayedCall(1000, () => {
         explosions.destroy();
@@ -220,11 +245,18 @@ class PlayScene extends Phaser.Scene {
     });
   }
 
+  playerHitByExplosion(player: any, explosion: any) {
+    // TODO: Add animation to make the bomberman explote
+    player.setTint(0x0000ff);
+  }
+
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
       this.socket.emit("bomb_activated", {
-        x: this.player.x + 32,
-        y: this.player.y + 32,
+        // QUESTION: Why I rest this value?
+        // HINT: check where the bombs are positionated
+        x: this.player.x - (this.player.x % 64) + 32,
+        y: this.player.y - (this.player.y % 64) + 32,
       });
     });
   }
