@@ -58,6 +58,7 @@ io.on("connection", (socket) => {
 
   socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
     io.emit("bomb_activated", bomb);
+    
   });
 
   socket.emit("currentPlayers", players);

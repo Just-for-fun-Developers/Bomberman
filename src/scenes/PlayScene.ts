@@ -9,6 +9,7 @@ class PlayScene extends Phaser.Scene {
   blocks: Phaser.Physics.Arcade.Group;
   otherPlayers: Phaser.Physics.Arcade.Group;
   isMoving: boolean;
+  player_dead: boolean;
   socket: Socket;
 
   constructor() {
@@ -19,7 +20,7 @@ class PlayScene extends Phaser.Scene {
   create() {
     // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
     // For now we can create global variables and it as a global variable with your local static IP
-    this.socket = io("http://192.168.1.105:3000");
+    this.socket = io("localhost:3000");
     this.otherPlayers = this.physics.add.group();
     this.showPlayers();
     this.createBG();
@@ -114,9 +115,11 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "player")
       .setScale(2)
       .setOrigin(0, 0);
+    this.player.setBodySize(this.player.width-15, this.player.height-5);
     this.player.body.gravity.y = 0;
     this.player.setCollideWorldBounds(true);
-
+    this.player.setData("x_start", playerInfo.x);
+    this.player.setData("y_start", playerInfo.y);
     //collider with blocks
     this.physics.add.collider(this.player, this.blocks);
     this.physics.add.overlap(
@@ -126,6 +129,7 @@ class PlayScene extends Phaser.Scene {
       null,
       this
     );
+    this.player_dead = false;
   }
 
   animateBomb() {
@@ -169,6 +173,11 @@ class PlayScene extends Phaser.Scene {
       frames: [{ key: "player", frame: 0 }],
       frameRate: 20,
     });
+    this.anims.create({
+      key: "die",
+      frames: this.anims.generateFrameNumbers("player", { start: 24, end: 29 }),
+      frameRate: 16,
+    });
 
     this.cursors = this.input.keyboard.createCursorKeys();
   }
@@ -197,11 +206,6 @@ class PlayScene extends Phaser.Scene {
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
 
       let explosions = this.physics.add.group();
-
-      // QUESTION: Should we mode the explotion to the server side
-      // it means when the bomb explote we send a message bomb_explote and launch this part of the code
-      // Check answer from chatGPT
-
       /*
         Server Authoritative Model: Instead of relying on each client to determine the timing of the explosion,
         you can have a central server that determines when events like the bomb explosion should occur.
@@ -246,8 +250,23 @@ class PlayScene extends Phaser.Scene {
   }
 
   playerHitByExplosion(player: any, explosion: any) {
-    // TODO: Add animation to make the bomberman explote
-    player.setTint(0x0000ff);
+    console.log("deadd")
+    this.player_dead = true;
+    player.anims.play('die');
+    /* player.on('animationcomplete', () => {
+      //player.setAlpha(0); // Hacer al jugador invisible
+      player.disableBody(true, true); // Deshabilitar el cuerpo de física
+      //this.player.destroy(); // Opcionalmente, puedes destruir el jugador
+    }); */
+
+    this.time.delayedCall(3000, () => {
+      player.setAlpha(1);
+      this.player_dead = false;
+      const startPositionX = player.getData("x_start");
+      const startPositionY = player.getData("y_start"); 
+      player.enableBody(true, startPositionX, startPositionY, true, true);
+      console.log("alive!")
+    });
   }
 
   bombInteraction() {
@@ -262,7 +281,8 @@ class PlayScene extends Phaser.Scene {
   }
 
   playerInteraction() {
-    if (this.player) {
+    if (this.player && !this.player_dead) {
+      console.log("enter update")
       let action = "turn";
       if (this.cursors.left.isDown) {
         action = "walk_left";
@@ -288,7 +308,6 @@ class PlayScene extends Phaser.Scene {
       if (this.player.getData("oldPosition")) {
         const oldPosition = this.player.getData("oldPosition");
         if (x !== oldPosition.x || y !== oldPosition.y) {
-          console.log("enter!");
           this.socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
@@ -328,7 +347,9 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "otherPlayer")
       .setOrigin(0, 0)
       .setScale(2);
-    otherPlayer.setTint(0xff0000);
+    const randomColor = Phaser.Math.Between(0, 0xffffff);
+
+    otherPlayer.setTint(randomColor);
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
