@@ -31,12 +31,13 @@ class PlayScene extends Phaser.Scene {
     this.detectPlayerMovement();
     this.detectDisconnectedPlayer();
 
-    this.bombInteraction();
     this.bombActivated();
+    this.bombInteraction();
   }
 
   update() {
     this.playerInteraction();
+    
   }
 
   createMazeBySocket() {
@@ -204,60 +205,47 @@ class PlayScene extends Phaser.Scene {
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
-
-      let explosions = this.physics.add.group();
-      /*
-        Server Authoritative Model: Instead of relying on each client to determine the timing of the explosion,
-        you can have a central server that determines when events like the bomb explosion should occur.
-        The server then sends this information to all clients, ensuring synchronization.
-        */
-      this.time.delayedCall(2000, () => {
+      this.time.delayedCall(2000, ()=>{
         bombSprite.destroy();
+      })
+      this.socket.emit("bomb_det", bombSprite);
+    });
 
-        for (let direction of directions) {
-          for (let i = 0; i < 3; i++) {
-            const newX = bomb.x + 64 * i * direction.x;
-            const newY = bomb.y + 64 * i * direction.y;
-            if (!this.checkOverlapWithBlocksAt(newX, newY)) {
-              let explotion = explosions
-                .create(newX, newY, "explosion")
-                .anims.play("explode");
+    this.socket.on("bomb_explosion", (bombSpriteAct:any) => {
+      let explosions = this.physics.add.group();
+      for (let direction of directions) {
+        for (let i = 0; i < 3; i++) {
+          const newX = bombSpriteAct.x + 64 * i * direction.x;
+          const newY = bombSpriteAct.y + 64 * i * direction.y;
+          if (!this.checkOverlapWithBlocksAt(newX, newY)) {
+            let explotion = explosions
+              .create(newX, newY, "explosion")
+              .anims.play("explode");
 
-              // Delete sprites after animation finish
-              explotion.on("animationcomplete", () => {
-                explotion.destroy();
-              });
-            } else {
-              // QUESTION: Why I added this break?
-              break;
-            }
+            // Delete sprites after animation finish
+            explotion.on("animationcomplete", () => {
+              explotion.destroy();
+            });
+          } else {
+            break;
           }
         }
+      }
 
-        // Set up overlap check between explosions and player
-        this.physics.add.overlap(
-          this.player,
-          explosions,
-          this.playerHitByExplosion,
-          null,
-          this
-        );
-      });
-      /* this.time.delayedCall(1000, () => {
-        explosions.destroy();
-      }) */
+      // Set up overlap check between explosions and player
+      this.physics.add.overlap(
+        this.player,
+        explosions,
+        this.playerHitByExplosion,
+        null,
+        this
+      );
     });
   }
 
   playerHitByExplosion(player: any, explosion: any) {
-    console.log("deadd")
     this.player_dead = true;
     player.anims.play('die');
-    /* player.on('animationcomplete', () => {
-      //player.setAlpha(0); // Hacer al jugador invisible
-      player.disableBody(true, true); // Deshabilitar el cuerpo de física
-      //this.player.destroy(); // Opcionalmente, puedes destruir el jugador
-    }); */
 
     this.time.delayedCall(3000, () => {
       player.setAlpha(1);
@@ -265,15 +253,12 @@ class PlayScene extends Phaser.Scene {
       const startPositionX = player.getData("x_start");
       const startPositionY = player.getData("y_start"); 
       player.enableBody(true, startPositionX, startPositionY, true, true);
-      console.log("alive!")
     });
   }
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
       this.socket.emit("bomb_activated", {
-        // QUESTION: Why I rest this value?
-        // HINT: check where the bombs are positionated
         x: this.player.x - (this.player.x % 64) + 32,
         y: this.player.y - (this.player.y % 64) + 32,
       });
@@ -282,7 +267,6 @@ class PlayScene extends Phaser.Scene {
 
   playerInteraction() {
     if (this.player && !this.player_dead) {
-      console.log("enter update")
       let action = "turn";
       if (this.cursors.left.isDown) {
         action = "walk_left";

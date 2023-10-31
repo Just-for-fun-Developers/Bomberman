@@ -58,8 +58,13 @@ io.on("connection", (socket) => {
 
   socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
     io.emit("bomb_activated", bomb);
-    
   });
+  socket.on("bomb_det", (bomb:any) =>{
+    setTimeout(()=>{
+      console.log("bomb_explosion!!")
+      io.emit("bomb_explosion", bomb);
+    },2000)
+  })
 
   socket.emit("currentPlayers", players);
   socket.broadcast.emit("newPlayer", players[socket.id]);
