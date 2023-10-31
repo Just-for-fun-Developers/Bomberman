@@ -121,6 +121,7 @@ class PlayScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.player.setData("x_start", playerInfo.x);
     this.player.setData("y_start", playerInfo.y);
+    this.player.setTint(parseInt(playerInfo.color, 16));
     //collider with blocks
     this.physics.add.collider(this.player, this.blocks);
     this.physics.add.overlap(
@@ -138,9 +139,6 @@ class PlayScene extends Phaser.Scene {
       key: "explode",
       frames: "explosion",
       frameRate: 30,
-      /* repeat: -1,
-      repeatDelay: 2000
- */
     });
   }
 
@@ -331,9 +329,7 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "otherPlayer")
       .setOrigin(0, 0)
       .setScale(2);
-    const randomColor = Phaser.Math.Between(0, 0xffffff);
-
-    otherPlayer.setTint(randomColor);
+    otherPlayer.setTint(parseInt(playerInfo.color, 16));
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
