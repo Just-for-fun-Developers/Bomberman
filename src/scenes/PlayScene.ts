@@ -37,7 +37,6 @@ class PlayScene extends Phaser.Scene {
 
   update() {
     this.playerInteraction();
-    
   }
 
   createMazeBySocket() {
@@ -116,7 +115,7 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "player")
       .setScale(2)
       .setOrigin(0, 0);
-    this.player.setBodySize(this.player.width-15, this.player.height-5);
+    this.player.setBodySize(this.player.width - 15, this.player.height - 5);
     this.player.body.gravity.y = 0;
     this.player.setCollideWorldBounds(true);
     this.player.setData("x_start", playerInfo.x);
@@ -203,19 +202,20 @@ class PlayScene extends Phaser.Scene {
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
-      this.time.delayedCall(2000, ()=>{
+      this.time.delayedCall(2000, () => {
         bombSprite.destroy();
-      })
+      });
       this.socket.emit("bomb_det", bombSprite);
     });
 
-    this.socket.on("bomb_explosion", (bombSpriteAct:any) => {
+    this.socket.on("bomb_explosion", (bombSpriteAct: any) => {
       let explosions = this.physics.add.group();
       for (let direction of directions) {
         for (let i = 0; i < 3; i++) {
           const newX = bombSpriteAct.x + 64 * i * direction.x;
           const newY = bombSpriteAct.y + 64 * i * direction.y;
-          if (!this.checkOverlapWithBlocksAt(newX, newY)) {
+          //if (!this.checkOverlapWithBlocksAt(newX, newY))
+          if (true) {
             let explotion = explosions
               .create(newX, newY, "explosion")
               .anims.play("explode");
@@ -238,20 +238,26 @@ class PlayScene extends Phaser.Scene {
         null,
         this
       );
+      this.physics.add.overlap(explosions, this.blocks, this.destroyWall);
     });
   }
 
   playerHitByExplosion(player: any, explosion: any) {
     this.player_dead = true;
-    player.anims.play('die');
+    player.setVelocity(0,0);
+    player.anims.play("die");
 
     this.time.delayedCall(3000, () => {
       player.setAlpha(1);
       this.player_dead = false;
       const startPositionX = player.getData("x_start");
-      const startPositionY = player.getData("y_start"); 
+      const startPositionY = player.getData("y_start");
       player.enableBody(true, startPositionX, startPositionY, true, true);
     });
+  }
+
+  destroyWall(explosion: any, block: any) {
+    block.destroy();
   }
 
   bombInteraction() {
