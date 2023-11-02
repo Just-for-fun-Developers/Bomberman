@@ -26,6 +26,7 @@ class PlayScene extends Phaser.Scene {
     this.createBG();
     this.createMazeBySocket();
     this.createOtherPlayer();
+    this.animateWallDestruction();
     this.animateBomb();
     this.animatePlayer();
     this.detectPlayerMovement();
@@ -121,6 +122,7 @@ class PlayScene extends Phaser.Scene {
     this.player.setData("x_start", playerInfo.x);
     this.player.setData("y_start", playerInfo.y);
     this.player.setTint(parseInt(playerInfo.color, 16));
+    this.player.setDepth(1);
     //collider with blocks
     this.physics.add.collider(this.player, this.blocks);
     this.physics.add.overlap(
@@ -138,6 +140,14 @@ class PlayScene extends Phaser.Scene {
       key: "explode",
       frames: "explosion",
       frameRate: 30,
+    });
+  }
+
+  animateWallDestruction() {
+    this.anims.create({
+      key: "wall_destroy",
+      frames: this.anims.generateFrameNumbers("wall_destroyed", { start: 0, end: 14 }),
+      frameRate: 16
     });
   }
 
@@ -211,11 +221,11 @@ class PlayScene extends Phaser.Scene {
     this.socket.on("bomb_explosion", (bombSpriteAct: any) => {
       let explosions = this.physics.add.group();
       for (let direction of directions) {
+        let count = 0;
         for (let i = 0; i < 3; i++) {
           const newX = bombSpriteAct.x + 64 * i * direction.x;
           const newY = bombSpriteAct.y + 64 * i * direction.y;
-          //if (!this.checkOverlapWithBlocksAt(newX, newY))
-          if (true) {
+          if (!this.checkOverlapWithBlocksAt(newX, newY)) {
             let explotion = explosions
               .create(newX, newY, "explosion")
               .anims.play("explode");
@@ -224,7 +234,17 @@ class PlayScene extends Phaser.Scene {
             explotion.on("animationcomplete", () => {
               explotion.destroy();
             });
-          } else {
+          }else if(count === 0){
+            count++;
+            let explotion = explosions
+            .create(newX, newY, "explosion")
+            .anims.play("explode");
+            explotion.setVisible(false);
+            explotion.on("animationcomplete", () => {
+              explotion.destroy();
+            });
+            break;
+          }else {
             break;
           }
         }
@@ -238,7 +258,7 @@ class PlayScene extends Phaser.Scene {
         null,
         this
       );
-      this.physics.add.overlap(explosions, this.blocks, this.destroyWall);
+      this.physics.add.overlap(explosions, this.blocks, this.destroyWall, null, this);
     });
   }
 
@@ -257,7 +277,14 @@ class PlayScene extends Phaser.Scene {
   }
 
   destroyWall(explosion: any, block: any) {
+    //block.anims.play("wall_destroy");
     block.destroy();
+    const wall = this.physics.add.sprite(block.x, block.y,"wall_destroyed")
+    .setOrigin(0,0).setDepth(1);
+    wall.anims.play("wall_destroy");
+    wall.on("animationcomplete", () => {
+      wall.destroy();
+    });
   }
 
   bombInteraction() {
@@ -336,6 +363,7 @@ class PlayScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setScale(2);
     otherPlayer.setTint(parseInt(playerInfo.color, 16));
+    otherPlayer.setDepth(1);
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
