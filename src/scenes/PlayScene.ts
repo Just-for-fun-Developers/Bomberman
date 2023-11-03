@@ -146,8 +146,11 @@ class PlayScene extends Phaser.Scene {
   animateWallDestruction() {
     this.anims.create({
       key: "wall_destroy",
-      frames: this.anims.generateFrameNumbers("wall_destroyed", { start: 0, end: 14 }),
-      frameRate: 16
+      frames: this.anims.generateFrameNumbers("wall_destroyed", {
+        start: 0,
+        end: 14,
+      }),
+      frameRate: 16,
     });
   }
 
@@ -234,17 +237,15 @@ class PlayScene extends Phaser.Scene {
             explotion.on("animationcomplete", () => {
               explotion.destroy();
             });
-          }else if(count === 0){
-            count++;
+          } else {
             let explotion = explosions
-            .create(newX, newY, "explosion")
-            .anims.play("explode");
-            explotion.setVisible(false);
+              .create(newX, newY, "explosion")
+              .anims.play("explode");
+
+            // Delete sprites after animation finish
             explotion.on("animationcomplete", () => {
               explotion.destroy();
             });
-            break;
-          }else {
             break;
           }
         }
@@ -258,13 +259,19 @@ class PlayScene extends Phaser.Scene {
         null,
         this
       );
-      this.physics.add.overlap(explosions, this.blocks, this.destroyWall, null, this);
+      this.physics.add.overlap(
+        explosions,
+        this.blocks,
+        this.destroyWall,
+        null,
+        this
+      );
     });
   }
 
   playerHitByExplosion(player: any, explosion: any) {
     this.player_dead = true;
-    player.setVelocity(0,0);
+    player.setVelocity(0, 0);
     player.anims.play("die");
 
     this.time.delayedCall(3000, () => {
@@ -276,22 +283,27 @@ class PlayScene extends Phaser.Scene {
     });
   }
 
-  destroyWall(explosion: any, block: any) {
-    //block.anims.play("wall_destroy");
-    block.destroy();
-    const wall = this.physics.add.sprite(block.x, block.y,"wall_destroyed")
-    .setOrigin(0,0).setDepth(1);
+  destroyWall(
+    explosion: Phaser.Physics.Arcade.Sprite,
+    block: Phaser.Physics.Arcade.Sprite
+  ) {
+    block.setVisible(false);
+    const wall = this.physics.add
+      .sprite(block.x, block.y, "wall_destroyed")
+      .setOrigin(0, 0)
+      .setDepth(1);
     wall.anims.play("wall_destroy");
     wall.on("animationcomplete", () => {
       wall.destroy();
     });
+    block.destroy();
   }
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
       this.socket.emit("bomb_activated", {
-        x: this.player.x - (this.player.x % 64) + 32,
-        y: this.player.y - (this.player.y % 64) + 32,
+        x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
+        y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
       });
     });
   }
