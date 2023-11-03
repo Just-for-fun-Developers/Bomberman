@@ -8,6 +8,7 @@ export interface PlayerInfo {
   x: number;
   y: number;
   playerId: string;
+  color: string;
 }
 
 export const directions = [

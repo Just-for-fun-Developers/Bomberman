@@ -6,7 +6,6 @@ import { Maze, PlayerInfo } from "../common/interfaces";
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    // QUESTION: Why do you think I change this to *?
     origin: "*",
     methods: ["GET", "POST"],
   },
@@ -31,11 +30,22 @@ function CreateNewPlayer(socketId: string) {
         x: col * 64 + 64,
         y: row * 64 + 64,
         playerId: socketId,
+        color: getRandomColor(),
       };
       isIn = false;
     }
   }
 }
+
+function getRandomColor() {
+  const letters = "0123456789abcdef";
+  let color = "0x";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 let newMaze: number[][] | undefined = undefined;
 const ROWS = 10;
 const COLS = 10;
@@ -59,6 +69,11 @@ io.on("connection", (socket) => {
   socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
     io.emit("bomb_activated", bomb);
   });
+  socket.on("bomb_det", (bomb:any) =>{
+    setTimeout(()=>{
+      io.emit("bomb_explosion", bomb);
+    },2000)
+  })
 
   socket.emit("currentPlayers", players);
   socket.broadcast.emit("newPlayer", players[socket.id]);

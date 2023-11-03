@@ -9,6 +9,7 @@ class PlayScene extends Phaser.Scene {
   blocks: Phaser.Physics.Arcade.Group;
   otherPlayers: Phaser.Physics.Arcade.Group;
   isMoving: boolean;
+  player_dead: boolean;
   socket: Socket;
 
   constructor() {
@@ -19,19 +20,20 @@ class PlayScene extends Phaser.Scene {
   create() {
     // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
     // For now we can create global variables and it as a global variable with your local static IP
-    this.socket = io("http://192.168.1.105:3000");
+    this.socket = io("localhost:3000");
     this.otherPlayers = this.physics.add.group();
     this.showPlayers();
     this.createBG();
     this.createMazeBySocket();
     this.createOtherPlayer();
+    this.animateWallDestruction();
     this.animateBomb();
     this.animatePlayer();
     this.detectPlayerMovement();
     this.detectDisconnectedPlayer();
 
-    this.bombInteraction();
     this.bombActivated();
+    this.bombInteraction();
   }
 
   update() {
@@ -114,9 +116,13 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "player")
       .setScale(2)
       .setOrigin(0, 0);
+    this.player.setBodySize(this.player.width - 15, this.player.height - 5);
     this.player.body.gravity.y = 0;
     this.player.setCollideWorldBounds(true);
-
+    this.player.setData("x_start", playerInfo.x);
+    this.player.setData("y_start", playerInfo.y);
+    this.player.setTint(parseInt(playerInfo.color, 16));
+    this.player.setDepth(1);
     //collider with blocks
     this.physics.add.collider(this.player, this.blocks);
     this.physics.add.overlap(
@@ -126,6 +132,7 @@ class PlayScene extends Phaser.Scene {
       null,
       this
     );
+    this.player_dead = false;
   }
 
   animateBomb() {
@@ -133,9 +140,17 @@ class PlayScene extends Phaser.Scene {
       key: "explode",
       frames: "explosion",
       frameRate: 30,
-      /* repeat: -1,
-      repeatDelay: 2000
- */
+    });
+  }
+
+  animateWallDestruction() {
+    this.anims.create({
+      key: "wall_destroy",
+      frames: this.anims.generateFrameNumbers("wall_destroyed", {
+        start: 0,
+        end: 14,
+      }),
+      frameRate: 16,
     });
   }
 
@@ -169,6 +184,11 @@ class PlayScene extends Phaser.Scene {
       frames: [{ key: "player", frame: 0 }],
       frameRate: 20,
     });
+    this.anims.create({
+      key: "die",
+      frames: this.anims.generateFrameNumbers("player", { start: 24, end: 29 }),
+      frameRate: 16,
+    });
 
     this.cursors = this.input.keyboard.createCursorKeys();
   }
@@ -195,74 +215,101 @@ class PlayScene extends Phaser.Scene {
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
-
-      let explosions = this.physics.add.group();
-
-      // QUESTION: Should we mode the explotion to the server side
-      // it means when the bomb explote we send a message bomb_explote and launch this part of the code
-      // Check answer from chatGPT
-
-      /*
-        Server Authoritative Model: Instead of relying on each client to determine the timing of the explosion,
-        you can have a central server that determines when events like the bomb explosion should occur.
-        The server then sends this information to all clients, ensuring synchronization.
-        */
       this.time.delayedCall(2000, () => {
         bombSprite.destroy();
+      });
+      this.socket.emit("bomb_det", bombSprite);
+    });
 
-        for (let direction of directions) {
-          for (let i = 0; i < 3; i++) {
-            const newX = bomb.x + 64 * i * direction.x;
-            const newY = bomb.y + 64 * i * direction.y;
-            if (!this.checkOverlapWithBlocksAt(newX, newY)) {
-              let explotion = explosions
-                .create(newX, newY, "explosion")
-                .anims.play("explode");
+    this.socket.on("bomb_explosion", (bombSpriteAct: any) => {
+      let explosions = this.physics.add.group();
+      for (let direction of directions) {
+        let count = 0;
+        for (let i = 0; i < 3; i++) {
+          const newX = bombSpriteAct.x + 64 * i * direction.x;
+          const newY = bombSpriteAct.y + 64 * i * direction.y;
+          if (!this.checkOverlapWithBlocksAt(newX, newY)) {
+            let explotion = explosions
+              .create(newX, newY, "explosion")
+              .anims.play("explode");
 
-              // Delete sprites after animation finish
-              explotion.on("animationcomplete", () => {
-                explotion.destroy();
-              });
-            } else {
-              // QUESTION: Why I added this break?
-              break;
-            }
+            // Delete sprites after animation finish
+            explotion.on("animationcomplete", () => {
+              explotion.destroy();
+            });
+          } else {
+            let explotion = explosions
+              .create(newX, newY, "explosion")
+              .anims.play("explode");
+
+            // Delete sprites after animation finish
+            explotion.on("animationcomplete", () => {
+              explotion.destroy();
+            });
+            break;
           }
         }
+      }
 
-        // Set up overlap check between explosions and player
-        this.physics.add.overlap(
-          this.player,
-          explosions,
-          this.playerHitByExplosion,
-          null,
-          this
-        );
-      });
-      /* this.time.delayedCall(1000, () => {
-        explosions.destroy();
-      }) */
+      // Set up overlap check between explosions and player
+      this.physics.add.overlap(
+        this.player,
+        explosions,
+        this.playerHitByExplosion,
+        null,
+        this
+      );
+      this.physics.add.overlap(
+        explosions,
+        this.blocks,
+        this.destroyWall,
+        null,
+        this
+      );
     });
   }
 
   playerHitByExplosion(player: any, explosion: any) {
-    // TODO: Add animation to make the bomberman explote
-    player.setTint(0x0000ff);
+    this.player_dead = true;
+    player.setVelocity(0, 0);
+    player.anims.play("die");
+
+    this.time.delayedCall(3000, () => {
+      player.setAlpha(1);
+      this.player_dead = false;
+      const startPositionX = player.getData("x_start");
+      const startPositionY = player.getData("y_start");
+      player.enableBody(true, startPositionX, startPositionY, true, true);
+    });
+  }
+
+  destroyWall(
+    explosion: Phaser.Physics.Arcade.Sprite,
+    block: Phaser.Physics.Arcade.Sprite
+  ) {
+    block.setVisible(false);
+    const wall = this.physics.add
+      .sprite(block.x, block.y, "wall_destroyed")
+      .setOrigin(0, 0)
+      .setDepth(1);
+    wall.anims.play("wall_destroy");
+    wall.on("animationcomplete", () => {
+      wall.destroy();
+    });
+    block.destroy();
   }
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
       this.socket.emit("bomb_activated", {
-        // QUESTION: Why I rest this value?
-        // HINT: check where the bombs are positionated
-        x: this.player.x - (this.player.x % 64) + 32,
-        y: this.player.y - (this.player.y % 64) + 32,
+        x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
+        y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
       });
     });
   }
 
   playerInteraction() {
-    if (this.player) {
+    if (this.player && !this.player_dead) {
       let action = "turn";
       if (this.cursors.left.isDown) {
         action = "walk_left";
@@ -288,7 +335,6 @@ class PlayScene extends Phaser.Scene {
       if (this.player.getData("oldPosition")) {
         const oldPosition = this.player.getData("oldPosition");
         if (x !== oldPosition.x || y !== oldPosition.y) {
-          console.log("enter!");
           this.socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
@@ -328,7 +374,8 @@ class PlayScene extends Phaser.Scene {
       .sprite(playerInfo.x, playerInfo.y, "otherPlayer")
       .setOrigin(0, 0)
       .setScale(2);
-    otherPlayer.setTint(0xff0000);
+    otherPlayer.setTint(parseInt(playerInfo.color, 16));
+    otherPlayer.setDepth(1);
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
