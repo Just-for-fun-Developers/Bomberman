@@ -31,6 +31,7 @@ function CreateNewPlayer(socketId: string) {
         y: row * 64 + 64,
         playerId: socketId,
         color: getRandomColor(),
+        lifes: 4,
       };
       isIn = false;
     }
@@ -67,13 +68,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
+    console.log("bomb_activated")
     io.emit("bomb_activated", bomb);
   });
-  socket.on("bomb_det", (bomb:any) =>{
+  /* socket.on("bomb_det", (bomb:any) =>{
+    console.log("bomb_DET")
     setTimeout(()=>{
-      io.emit("bomb_explosion", bomb);
+      socket.broadcast.emit("bomb_explosion", bomb);
     },2000)
-  })
+  }) */
 
   socket.emit("currentPlayers", players);
   socket.broadcast.emit("newPlayer", players[socket.id]);
@@ -94,6 +97,14 @@ io.on("connection", (socket) => {
       action: movementData.action,
     });
   });
+
+  socket.on("updateScore", () => {
+    console.log("update!")
+    players[socket.id].lifes--;
+    io.emit("changeScore", {
+      player: players[socket.id],
+    });
+  })
 });
 
 const PORT = 3000;
