@@ -146,7 +146,6 @@ class PlayScene extends Phaser.Scene {
     scoreText.setVisible(false);
     scoreText.setData("playerId", playerInfo.playerId);
     scoreText.setStyle({color: "#"+playerInfo.color.substring(2)});
-    console.log("#"+playerInfo.color.substring(2));
     this.scoreTexts.add(scoreText);
     this.printTextScores();
   }
@@ -230,16 +229,13 @@ class PlayScene extends Phaser.Scene {
 
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
-      console.log("bomb_activated2")
       let explosions = this.physics.add.group();
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
       this.time.delayedCall(2000, () => {
         bombSprite.destroy();
         const aux = this.player.getData("playerId");
-      console.log(`bomb_EXPLOSION, WHO: ${aux}`)
       
       for (let direction of directions) {
-        console.log("for 1")
         for (let i = 0; i < 3; i++) {
           const newX = bombSprite.x + 64 * i * direction.x;
           const newY = bombSprite.y + 64 * i * direction.y;
@@ -294,64 +290,6 @@ class PlayScene extends Phaser.Scene {
         this
       );
     });
-
-    /* this.socket.on("bomb_explosion", (bombSpriteAct: any) => {
-      const aux = this.player.getData("playerId");
-      console.log(`bomb_EXPLOSION, WHO: ${aux}`)
-      let explosions = this.physics.add.group();
-      for (let direction of directions) {
-        console.log("for 1")
-        for (let i = 0; i < 3; i++) {
-          const newX = bombSpriteAct.x + 64 * i * direction.x;
-          const newY = bombSpriteAct.y + 64 * i * direction.y;
-          if (!this.checkOverlapWithBlocksAt(newX, newY)) {
-            let explotion = explosions
-              .create(newX, newY, "explosion")
-              .anims.play("explode");
-
-            // Delete sprites after animation finish
-            explotion.on("animationcomplete", () => {
-              explotion.destroy();
-            });
-          } else {
-            let explotion = explosions
-              .create(newX, newY, "explosion")
-              .anims.play("explode");
-
-            // Delete sprites after animation finish
-            explotion.on("animationcomplete", () => {
-              explotion.destroy();
-            });
-            break;
-          }
-        }
-      }
-
-      // Set up overlap check between explosions and player
-      let playerHit = false;
-      this.physics.add.overlap(
-        this.player,
-        explosions,
-        (player, explosion) => {
-          if(!playerHit){
-            this.playerHitByExplosion(player, explosion);
-            playerHit = true;
-            this.time.delayedCall(1000, () => {
-              playerHit = false;
-            })
-          }
-        },
-        null,
-        this
-      );
-      this.physics.add.overlap(
-        explosions,
-        this.blocks,
-        this.destroyWall,
-        null,
-        this
-      );
-    }); */
   }
 
   playerHitByExplosion(player: any, explosion: any) {
@@ -395,8 +333,6 @@ class PlayScene extends Phaser.Scene {
                 otherPlayer.destroy();
               }
             });
-            console.log("else ==")
-          
         }
         
         this.scoreTexts
@@ -405,13 +341,11 @@ class PlayScene extends Phaser.Scene {
             const OtherPlayerId = otherPlayerScoreText.getData("playerId");
             if (playerInfo.player.playerId === OtherPlayerId) {
               if (otherPlayerScoreText) {
-                console.log(playerInfo.player.lifes)
                 otherPlayerScoreText.setText(`life: ${playerInfo.player.lifes}`)
               }
             }
             
           });
-          console.log(playerInfo.player.playerId)
       }
     );
   }
@@ -434,7 +368,6 @@ class PlayScene extends Phaser.Scene {
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
-      console.log("SPACE PRESSED")
       this.socket.emit("bomb_activated", {
         x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
         y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
@@ -584,15 +517,12 @@ class PlayScene extends Phaser.Scene {
   }
 
   printTextScores() {
-    console.log(this.scoreTexts.getLength())
     this.scoreTexts.getChildren().forEach( (textObject:any, index:number) => {
-      console.log("entered child")
       if (textObject instanceof Phaser.GameObjects.Text) {
         const xPos = 800;
         const yPos = 20 + index*60
         textObject.setPosition(xPos, yPos);
         textObject.setVisible(true);
-        console.log(`entered if: xpos: ${xPos}, ypos: ${yPos}, text: ${textObject.text}`)
       }
     });
   }
