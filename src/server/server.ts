@@ -2,14 +2,18 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { createMaze } from "./Maze";
 import { Maze, PlayerInfo } from "../common/interfaces";
+import  express  from "express";
 
-const httpServer = createServer();
+const app = express();
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
 });
+
+app.use(express.static("build"));
 
 const players: { [key: string]: PlayerInfo } = {};
 
