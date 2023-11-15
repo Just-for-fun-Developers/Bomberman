@@ -2,14 +2,18 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { createMaze } from "./Maze";
 import { Maze, PlayerInfo } from "../common/interfaces";
+import express from "express";
 
-const httpServer = createServer();
+const app = express();
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
 });
+
+app.use(express.static("build"));
 
 const players: { [key: string]: PlayerInfo } = {};
 
@@ -31,6 +35,7 @@ function CreateNewPlayer(socketId: string) {
         y: row * 64 + 64,
         playerId: socketId,
         color: getRandomColor(),
+        lifes: 4,
       };
       isIn = false;
     }
@@ -67,13 +72,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
+    console.log("bomb_activated");
     io.emit("bomb_activated", bomb);
   });
-  socket.on("bomb_det", (bomb:any) =>{
+  /* socket.on("bomb_det", (bomb:any) =>{
+    console.log("bomb_DET")
     setTimeout(()=>{
-      io.emit("bomb_explosion", bomb);
+      socket.broadcast.emit("bomb_explosion", bomb);
     },2000)
-  })
+  }) */
 
   socket.emit("currentPlayers", players);
   socket.broadcast.emit("newPlayer", players[socket.id]);
@@ -92,6 +99,14 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("playerMoved", {
       player: players[socket.id],
       action: movementData.action,
+    });
+  });
+
+  socket.on("updateScore", () => {
+    console.log("update!");
+    players[socket.id].lifes--;
+    io.emit("changeScore", {
+      player: players[socket.id],
     });
   });
 });
