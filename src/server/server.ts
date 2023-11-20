@@ -102,6 +102,7 @@ io.on("connection", (socket) => {
     });
   })
 });
+const ipProd = process.env.IP_PROD || 'localhost';
 
 const PORT = 3000;
 httpServer.listen(PORT, () => {
