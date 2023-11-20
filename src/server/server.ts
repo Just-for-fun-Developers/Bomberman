@@ -102,9 +102,9 @@ io.on("connection", (socket) => {
     });
   })
 });
-const ipProd = process.env.IP_PROD || 'localhost';
+//const ipProd = process.env.IP_PROD || 'localhost';
 
 const PORT = 3000;
 httpServer.listen(PORT, () => {
-  console.log(`Socket.io server running on port ${PORT}`);
+  console.log(`Socket.io bomberman-app server running on port ${PORT}`);
 });

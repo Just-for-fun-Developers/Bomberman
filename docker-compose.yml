@@ -5,7 +5,7 @@ version: '3'
 services:
   bomberman-app:
     build: .
-    image: carloscyucra/bomberman-app:1.0
+    image: carloscyucra/bomberman-app:1.2
     ports:
       - '3000:3000'
     volumes:
