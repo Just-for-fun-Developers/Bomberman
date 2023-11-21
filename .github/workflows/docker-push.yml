@@ -24,11 +24,7 @@ jobs:
         run: docker-compose -f docker-compose-kent.yml build
 
       - name: Get the latest commit SHA
-        run: echo ${{github.sha}}
-
-      - name: Get the latest commit SHA 2
-        id: get-sha
-        run: echo "::set-output name=sha::$(git rev-parse HEAD)"
+        run: echo ${{ github.event.pull_request.head.sha }}
 
       - name: Tag the Docker Image
         run: docker tag kentyucraq/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.sha }}
