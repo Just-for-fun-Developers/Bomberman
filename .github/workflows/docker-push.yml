@@ -2,32 +2,35 @@ name: Docker Compose Build and Push with Commit SHA
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check Out Repo
-      uses: actions/checkout@v2
+      - name: Check Out Repo
+        uses: actions/checkout@v2
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - name: Build the Docker Image
-      run: docker-compose -f docker-compose-kent.yml build
+      - name: Build the Docker Image
+        run: docker-compose -f docker-compose-kent.yml build
 
-    - name: Tag the Docker Image
-      run: docker tag kentyucraq/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.sha }}
+      - name: Get the latest commit SHA
+        run: echo ${{github.sha}}
 
-    - name: Push the Docker Image
-      run: docker push kentyucraq/bomberman-app:${{ github.sha }}
+      - name: Tag the Docker Image
+        run: docker tag kentyucraq/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.sha }}
 
-    - name: Log out from Docker Hub
-      run: docker logout
+      - name: Push the Docker Image
+        run: docker push kentyucraq/bomberman-app:${{ github.sha }}
+
+      - name: Log out from Docker Hub
+        run: docker logout
