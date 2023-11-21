@@ -1,0 +1,16 @@
+# commando to up: docker-compose up -d
+# commando to down: docker-compose down -v
+version: '3'
+
+services:
+  bomberman-app:
+    build: .
+    image: kentyucraq/bomberman-app:1.0
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./:/app
+      - /app/node_modules
+
+    environment:
+      - SERVER_HOST=${PRODUCTION_HOST}
