@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import PlayScene from "./scenes/PlayScene";
 import PreloadScene from "./scenes/PreloadScene";
+import pepe from "pepe"
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
