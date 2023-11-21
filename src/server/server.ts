@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { createMaze } from "./Maze";
 import { Maze, PlayerInfo } from "../common/interfaces";
-import  express  from "express";
+import express from "express";
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,7 +57,7 @@ const COLS = 10;
 const PERCENTAGE_OCCUPIED = 0.5;
 
 io.on("connection", (socket) => {
-  console.log(`connect ${socket.id}`);
+  console.log(`connecting new ${socket.id}`);
 
   if (newMaze === undefined) {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
@@ -100,7 +100,7 @@ io.on("connection", (socket) => {
     io.emit("changeScore", {
       player: players[socket.id],
     });
-  })
+  });
 });
 //const ipProd = process.env.IP_PROD || 'localhost';
 
