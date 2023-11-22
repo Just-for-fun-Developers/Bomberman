@@ -27,8 +27,8 @@ jobs:
           echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}" >> "$GITHUB_ENV"
           echo "DOCKER_COMPOSE_FILE=docker-compose-kent.yml" >> "$GITHUB_ENV"
         else
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}" >> "$GITHUB_ENV"
-          echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_CARLOS }}" >> "$GITHUB_ENV"
+          echo "DOCKER_USERNAME=carloscyucra" >> "$GITHUB_ENV"
+          echo "DOCKER_ACCESS_TOKEN=dckr_pat_eMpwz4RJnLXudOOwKmfZEgbuO1M" >> "$GITHUB_ENV"
           echo "DOCKER_COMPOSE_FILE=docker-compose-carlos.yml" >> "$GITHUB_ENV"
         fi
     - name: Check CREDENTIALS
