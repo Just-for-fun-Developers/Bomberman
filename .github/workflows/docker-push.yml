@@ -19,8 +19,10 @@ jobs:
       run: echo "account=${{ github.actor }}" >> "GITHUB_OUTPUT"
 
     - name: Set Docker Hub credentials
+      env:
+        ACCOUNT: ${{ steps.set-docker-account.outputs.account }}
       run: |
-        if [ "${{ steps.set-docker-account.outputs.account }}" = "kentyucra" ]; then
+        if [ "$ACCOUNT" = "kentyucra" ]; then
           echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "GITHUB_ENV"
           echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}" >> "GITHUB_ENV"
           echo "DOCKER_COMPOSE_FILE=docker-compose-kent.yml" >> "GITHUB_ENV"
