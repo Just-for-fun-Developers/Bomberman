@@ -22,7 +22,7 @@ jobs:
       env:
         ACCOUNT: ${{ steps.set-docker-account.outputs.account }}
       run: |
-        if [ $ACCOUNT = "kentyucra" ]; then
+        if [ "$ACCOUNT" = "kentyucra" ]; then
           echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "GITHUB_ENV"
           echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}" >> "GITHUB_ENV"
           echo "DOCKER_COMPOSE_FILE=docker-compose-kent.yml" >> "GITHUB_ENV"
@@ -35,8 +35,8 @@ jobs:
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
-        username: $DOCKER_USERNAME
-        password: $DOCKER_ACCESS_TOKEN
+        username: "$DOCKER_USERNAME"
+        password: "$DOCKER_ACCESS_TOKEN"
 
     - name: Build the Docker Image
       run: docker-compose -f $DOCKER_COMPOSE_FILE build
