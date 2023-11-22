@@ -21,6 +21,11 @@ jobs:
     - name: Set Docker Hub credentials
       env:
         ACCOUNT: ${{ steps.set-docker-account.outputs.account }}
+      run: echo $ACCOUNT
+
+    - name: Set Docker Hub credentials
+      env:
+        ACCOUNT: ${{ steps.set-docker-account.outputs.account }}
       run: |
         if [ $ACCOUNT = "kentyucra" ]; then
           echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "$GITHUB_ENV"
