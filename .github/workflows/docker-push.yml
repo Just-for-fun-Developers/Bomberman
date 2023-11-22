@@ -2,38 +2,51 @@ name: Docker Compose Build and Push with Commit SHA
 
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
   pull_request:
-    branches: ["master"]
+    branches: [ "master" ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check Out Repo
-        uses: actions/checkout@v2
+    - name: Check Out Repo
+      uses: actions/checkout@v2
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME_KENT }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}
+    - name: Determine Docker Hub account
+      id: set-docker-account
+      run: echo "::set-output name=account::${{ github.actor }}"
+      
+    - name: Determine Docker Hub account
+      run: echo ${{ steps.set-docker-account.outputs.account }}
 
-      - name: Build the Docker Image
-        run: docker-compose -f docker-compose-kent.yml build
+    - name: Set Docker Hub credentials
+      run: |
+        if [ "${{ steps.set-docker-account.outputs.account }}" = "kent" ]; then
+          echo "::set-env name=DOCKER_USERNAME::${{ secrets.DOCKER_HUB_USERNAME_KENT }}"
+          echo "::set-env name=DOCKER_ACCESS_TOKEN::${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}"
+          echo "::set-env name=DOCKER_COMPOSE_FILE::docker-compose-kent.yml"
+        else
+          echo "::set-env name=DOCKER_USERNAME::${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}"
+          echo "::set-env name=DOCKER_ACCESS_TOKEN::${{ secrets.DOCKER_HUB_ACCESS_TOKEN_CARLOS }}"
+          echo "::set-env name=DOCKER_COMPOSE_FILE::docker-compose-carlos.yml"
+        fi
 
-      - name: Get the latest commit SHA
-        run: echo ${{ github.event.pull_request.head.sha }}
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_ACCESS_TOKEN }}
 
-      - name: Say Hello Carlos
-        run: echo "Hello Carlos"
+    - name: Build the Docker Image
+      run: docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} build
 
-      - name: Tag the Docker Image
-        run: docker tag kentyucraq/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.sha }}
+    - name: Tag the Docker Image
+      run: docker tag ${{ env.DOCKER_USERNAME }}/bomberman-app:1.0 ${{ env.DOCKER_USERNAME }}/bomberman-app:${{ github.event.pull_request.head.sha }}
 
-      - name: Push the Docker Image
-        run: docker push kentyucraq/bomberman-app:${{ github.sha }}
+    - name: Push the Docker Image
+      run: docker push ${{ env.DOCKER_USERNAME }}/bomberman-app:${{ github.event.pull_request.head.sha }}
 
-      - name: Log out from Docker Hub
-        run: docker logout
+    - name: Log out from Docker Hub
+      run: docker logout
