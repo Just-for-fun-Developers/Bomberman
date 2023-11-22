@@ -16,37 +16,34 @@ jobs:
 
     - name: Determine Docker Hub account
       id: set-docker-account
-      run: echo "::set-output name=account::${{ github.actor }}"
-      
-    - name: Determine Docker Hub account
-      run: echo ${{ steps.set-docker-account.outputs.account }}
+      run: echo "account=${{ github.actor }} >> "GITHUB_OUTPUT"
 
     - name: Set Docker Hub credentials
       run: |
-        if [ "${{ steps.set-docker-account.outputs.account }}" = "kent" ]; then
-          echo "::set-env name=DOCKER_USERNAME::${{ secrets.DOCKER_HUB_USERNAME_KENT }}"
-          echo "::set-env name=DOCKER_ACCESS_TOKEN::${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}"
-          echo "::set-env name=DOCKER_COMPOSE_FILE::docker-compose-kent.yml"
+        if [ "${{ steps.set-docker-account.outputs.account }}" = "kentyucra" ]; then
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "GITHUB_ENV"
+          echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_KENT }}" >> "GITHUB_ENV"
+          echo "DOCKER_COMPOSE_FILE=docker-compose-kent.yml" >> "GITHUB_ENV"
         else
-          echo "::set-env name=DOCKER_USERNAME::${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}"
-          echo "::set-env name=DOCKER_ACCESS_TOKEN::${{ secrets.DOCKER_HUB_ACCESS_TOKEN_CARLOS }}"
-          echo "::set-env name=DOCKER_COMPOSE_FILE::docker-compose-carlos.yml"
+          echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}" >> "GITHUB_ENV"
+          echo "DOCKER_ACCESS_TOKEN=${{ secrets.DOCKER_HUB_ACCESS_TOKEN_CARLOS }}" >> "GITHUB_ENV"
+          echo "DOCKER_COMPOSE_FILE=docker-compose-carlos.yml" >> "GITHUB_ENV"
         fi
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_ACCESS_TOKEN }}
+        username: $DOCKER_USERNAME
+        password: $DOCKER_ACCESS_TOKEN
 
     - name: Build the Docker Image
-      run: docker-compose -f ${{ env.DOCKER_COMPOSE_FILE }} build
+      run: docker-compose -f $DOCKER_COMPOSE_FILE build
 
     - name: Tag the Docker Image
-      run: docker tag ${{ env.DOCKER_USERNAME }}/bomberman-app:1.0 ${{ env.DOCKER_USERNAME }}/bomberman-app:${{ github.event.pull_request.head.sha }}
+      run: docker tag $DOCKER_USERNAME/bomberman-app:1.0 $DOCKER_USERNAME/bomberman-app:${{ github.event.pull_request.head.sha }}
 
     - name: Push the Docker Image
-      run: docker push ${{ env.DOCKER_USERNAME }}/bomberman-app:${{ github.event.pull_request.head.sha }}
+      run: docker push $DOCKER_USERNAME/bomberman-app:${{ github.event.pull_request.head.sha }}
 
     - name: Log out from Docker Hub
       run: docker logout
