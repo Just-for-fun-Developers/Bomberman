@@ -16,7 +16,7 @@ jobs:
 
     - name: Determine Docker Hub account
       id: set-docker-account
-      run: echo "account=${{ github.actor }} >> "GITHUB_OUTPUT"
+      run: echo "account=${{ github.actor }}" >> "GITHUB_OUTPUT"
 
     - name: Set Docker Hub credentials
       run: |
