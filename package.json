@@ -10,7 +10,7 @@
     "dev-fb": "webpack serve --config webpack.fb.js",
     "start:socket": "ts-node src/server/server.ts",
     "start": "npm run build && npm run start:socket",
-    "dev-start": "export SERVER_HOST=localhost && npm run build && npm run start:socket"
+    "dev-start": "export SERVER_HOST=127.0.0.1 SERVER_PORT=3000 && npm run build && npm run start:socket"
   },
   "author": "",
   "license": "ISC",

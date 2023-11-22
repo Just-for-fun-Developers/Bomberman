@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { createMaze } from "./Maze";
 import { Maze, PlayerInfo } from "../common/interfaces";
-import  express  from "express";
+import express from "express";
 
 const app = express();
 const httpServer = createServer(app);
@@ -100,11 +100,11 @@ io.on("connection", (socket) => {
     io.emit("changeScore", {
       player: players[socket.id],
     });
-  })
+  });
 });
 //const ipProd = process.env.IP_PROD || 'localhost';
 
-const PORT = 3000;
+const PORT = process.env.SERVER_PORT;
 httpServer.listen(PORT, () => {
   console.log(`Socket.io:bomberman-app server running on port ${PORT}`);
 });
