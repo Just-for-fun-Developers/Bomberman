@@ -22,12 +22,20 @@ jobs:
         run: |
           if [ $ACCOUNT = "kentyucra" ]; then
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "$GITHUB_ENV"
-            echo "SSH_PRIVATE_KEY=SSH_PRIVATE_KEY_KENT" >> "$GITHUB_ENV"
+            {
+              echo 'SSH_PRIVATE_KEY<<EOF'
+              ${{ secrets.SSH_PRIVATE_KEY_KENT}}
+              echo EOF  
+            } >> "$GITHUB_ENV"
             echo "PORT=3001" >> "$GITHUB_ENV"
             echo "NAME_APP=bomberman-app-kent-test" >> "$GITHUB_ENV"
           else
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}" >> "$GITHUB_ENV"
-            echo "SSH_PRIVATE_KEY=SSH_PRIVATE_KEY_CARLOS" >> "$GITHUB_ENV"
+            {
+              echo 'SSH_PRIVATE_KEY<<EOF'
+              ${{ secrets.SSH_PRIVATE_KEY_CARLOS}}
+              echo EOF  
+            } >> "$GITHUB_ENV"
             echo "PORT=3002" >> "$GITHUB_ENV"
             echo "NAME_APP=bomberman-app-carlos-test" >> "$GITHUB_ENV"
           fi
@@ -35,7 +43,7 @@ jobs:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.2
         with:
-          ssh-private-key: ${{ secrets.$SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
 
       - name: SSH and Deploy to Droplet
         run: |
