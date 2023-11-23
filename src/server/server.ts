@@ -105,5 +105,5 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.SERVER_PORT;
 httpServer.listen(PORT, () => {
-  console.log(`Socket.io:bomberman-app server running on port ${PORT}`);
+  console.log(`Socket.io:bomberman-app server running on port --> ${PORT}`);
 });
