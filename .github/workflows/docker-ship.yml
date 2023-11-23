@@ -21,7 +21,7 @@ jobs:
           ACCOUNT: ${{ steps.set-docker-account.outputs.account }}
         run: |
           if [ $ACCOUNT = "kentyucra" ]; then
-            echo "DOCKER_USERNAME=${{ DOCKER_HUB_USERNAME_KENT }}" >> "$GITHUB_ENV"
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "$GITHUB_ENV"
             echo "SSH_PRIVATE_KEY=SSH_PRIVATE_KEY_KENT" >> "$GITHUB_ENV"
             echo "PORT=3001" >> "$GITHUB_ENV"
             echo "NAME_APP=bomberman-app-kent-test" >> "$GITHUB_ENV"
