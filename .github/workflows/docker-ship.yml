@@ -40,10 +40,13 @@ jobs:
             echo "NAME_APP=bomberman-app-carlos-test" >> "$GITHUB_ENV"
           fi
 
+      - name: Show SSH_PRIVATE_KEY
+        run: echo '$SSH_PRIVATE_KEY'
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.2
         with:
-          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
+          ssh-private-key: $SSH_PRIVATE_KEY
 
       - name: SSH and Deploy to Droplet
         run: |
