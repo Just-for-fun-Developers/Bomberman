@@ -24,7 +24,7 @@ jobs:
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_KENT }}" >> "$GITHUB_ENV"
             {
               echo 'SSH_PRIVATE_KEY<<CUSTOM_DELIMITER;'
-              ${{ secrets.SSH_PRIVATE_KEY_KENT}}
+              echo '${{ secrets.SSH_PRIVATE_KEY_KENT }}'
               echo 'CUSTOM_DELIMITER;'  
             } >> "$GITHUB_ENV"
             echo "PORT=3001" >> "$GITHUB_ENV"
@@ -33,7 +33,7 @@ jobs:
             echo "DOCKER_USERNAME=${{ secrets.DOCKER_HUB_USERNAME_CARLOS }}" >> "$GITHUB_ENV"
             {
               echo 'SSH_PRIVATE_KEY<<CUSTOM_DELIMITER;'
-              ${{ secrets.SSH_PRIVATE_KEY_CARLOS}}
+              echo '${{ secrets.SSH_PRIVATE_KEY_CARLOS }}'
               echo 'CUSTOM_DELIMITER;'  
             } >> "$GITHUB_ENV"
             echo "PORT=3002" >> "$GITHUB_ENV"
