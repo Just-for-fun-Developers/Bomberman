@@ -45,6 +45,9 @@ jobs:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_ACCESS_TOKEN }}
 
+    - name: Set PRODUCTION_HOST
+      run: export PRODUCTION_HOST=${{ vars.PRODUCTION_HOST }}
+
     - name: Build the Docker Image
       run: docker-compose -f $DOCKER_COMPOSE_FILE build
 
