@@ -25,7 +25,7 @@ jobs:
             {
               echo 'SSH_PRIVATE_KEY<<CUSTOM_DELIMITER'
               ${{ secrets.SSH_PRIVATE_KEY_KENT}}
-              echo CUSTOM_DELIMITER  
+              echo 'CUSTOM_DELIMITER'  
             } >> "$GITHUB_ENV"
             echo "PORT=3001" >> "$GITHUB_ENV"
             echo "NAME_APP=bomberman-app-kent-test" >> "$GITHUB_ENV"
@@ -34,7 +34,7 @@ jobs:
             {
               echo 'SSH_PRIVATE_KEY<<CUSTOM_DELIMITER'
               ${{ secrets.SSH_PRIVATE_KEY_CARLOS}}
-              echo CUSTOM_DELIMITER  
+              echo 'CUSTOM_DELIMITER'  
             } >> "$GITHUB_ENV"
             echo "PORT=3002" >> "$GITHUB_ENV"
             echo "NAME_APP=bomberman-app-carlos-test" >> "$GITHUB_ENV"
