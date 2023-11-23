@@ -4,7 +4,11 @@ version: '3'
 
 services:
   bomberman-app:
-    build: .
+    build:
+      context: .
+      args:
+        SERVER_HOST: ${PRODUCTION_HOST}
+        SERVER_PORT: 3001
     image: kentyucraq/bomberman-app:1.0
     ports:
       - '3001:3001'
@@ -14,4 +18,4 @@ services:
 
     environment:
       - SERVER_HOST=${PRODUCTION_HOST}
-      - SERVER_POST=3001
+      - SERVER_PORT=3001
