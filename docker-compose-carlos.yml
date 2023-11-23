@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        SERVER_HOST: $PRODUCTION_HOST
+        SERVER_HOST: ${PRODUCTION_HOST}
         SERVER_PORT: 3002
     image: carloscyucra/bomberman-app:1.0
     ports:
@@ -17,5 +17,5 @@ services:
       - /app/node_modules
 
     environment:
-      - SERVER_HOST=$$PRODUCTION_HOST
+      - SERVER_HOST=${PRODUCTION_HOST}
       - SERVER_PORT=3002
