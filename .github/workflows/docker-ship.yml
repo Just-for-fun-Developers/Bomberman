@@ -1,0 +1,23 @@
+name: Deploy to DigitalOcean Droplet Base
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: production host is
+        run: echo ${{ vars.PRODUCTION_HOST }}
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_KENT }}
+
+      - name: SSH and Deploy to Droplet
+        run: |
+          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker pull kentyucraq/bomberman-app:${{ github.event.pull_request.head.sha }}"
+          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker stop bomberman-app-kent-test"
+          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker run -d --rm --name bomberman-app-kent-test -p 3001:3001 $DOCKER_USERNAME/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.event.pull_request.head.sha }}"
