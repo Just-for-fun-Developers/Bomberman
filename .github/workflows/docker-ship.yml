@@ -1,7 +1,8 @@
-name: Deploy to DigitalOcean Droplet Base
+name: Deploy to DigitalOcean Droplet 1
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: ["master"]
 
 jobs:
   deploy:
@@ -19,5 +20,5 @@ jobs:
       - name: SSH and Deploy to Droplet
         run: |
           ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker pull kentyucraq/bomberman-app:${{ github.event.pull_request.head.sha }}"
-          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker stop bomberman-app-kent-test"
-          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker run -d --rm --name bomberman-app-kent-test -p 3001:3001 $DOCKER_USERNAME/bomberman-app:1.0 kentyucraq/bomberman-app:${{ github.event.pull_request.head.sha }}"
+          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "(docker ps -q -f name=bomberman-app-kent-test && docker stop bomberman-app-kent-test || echo 'No running container to stop')"
+          ssh -o "StrictHostKeyChecking=no" root@${{ vars.PRODUCTION_HOST }} "docker run -d --rm --name bomberman-app-kent-test -p 3001:3001 kentyucraq/bomberman-app:${{ github.event.pull_request.head.sha }}"
