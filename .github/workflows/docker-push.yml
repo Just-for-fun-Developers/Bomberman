@@ -48,6 +48,9 @@ jobs:
     - name: Set PRODUCTION_HOST
       run: export PRODUCTION_HOST=${{ vars.PRODUCTION_HOST }}
 
+    - name: Show PRODUCTION_HOST
+      run: echo $PRODUCTION_HOST
+
     - name: Build the Docker Image
       run: docker-compose -f $DOCKER_COMPOSE_FILE build
 
