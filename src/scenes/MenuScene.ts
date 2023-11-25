@@ -1,7 +1,10 @@
 import BaseScene from "./BaseScene";
+import { io, Socket } from "socket.io-client";
 
 class MenuScene extends BaseScene{
     menu:any;
+    socket: Socket;
+    playerName: string;
 
     constructor(){
         super('MenuScene');
@@ -14,6 +17,7 @@ class MenuScene extends BaseScene{
 
     create() {
         super.create();
+        //this.socket = io('localhost:3000')
         /* var input = this.add.dom(0, 0).createFromHTML('<input type="text" id="nameInput" style="width: 200px; font-size: 16px; padding: 8px; text-align: center;">');
         input.setDepth(1);
         input.addListener('click');
@@ -29,8 +33,8 @@ class MenuScene extends BaseScene{
                 }
             }
         }); */
-        var playerName = prompt('Ingresa tu Nickname:');
-        console.log(playerName); 
+        this.playerName = prompt('Ingresa tu Nickname:');
+        //console.log(this.playerName); 
         this.createMenu(this.menu, this.setupMenuEvents.bind(this));
     }
 
@@ -47,7 +51,7 @@ class MenuScene extends BaseScene{
         })
 
         textGO.on('pointerup', () => {
-            menuItem.scene && this.scene.start(menuItem.scene);
+            menuItem.scene && this.scene.start(menuItem.scene, { playerName: this.playerName });
             if(menuItem.text === 'Exit') {
                 this.game.destroy(true);
             }

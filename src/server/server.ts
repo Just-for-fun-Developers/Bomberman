@@ -20,7 +20,7 @@ const players: { [key: string]: PlayerInfo } = {};
 let game_maze: Maze = {} as Maze;
 
 //To position a new player in a random free place
-function CreateNewPlayer(socketId: string) {
+function CreateNewPlayer(socketId: string, playerName:any) {
   let isIn: boolean;
   isIn = true;
   while (isIn) {
@@ -36,6 +36,7 @@ function CreateNewPlayer(socketId: string) {
         playerId: socketId,
         color: getRandomColor(),
         lifes: 4,
+        name: playerName,
       };
       isIn = false;
     }
@@ -57,14 +58,19 @@ const COLS = 10;
 const PERCENTAGE_OCCUPIED = 0.5;
 
 io.on("connection", (socket) => {
-  console.log(`connect ${socket.id}`);
+  //console.log(`connect ${socket.id}`);
 
   if (newMaze === undefined) {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
-
-  CreateNewPlayer(socket.id);
+  socket.on('initPlayer', (playerName) => {
+    console.log(`connect ${playerName}`)
+    CreateNewPlayer(socket.id, playerName );
+    socket.emit("currentPlayers", players);
+    socket.broadcast.emit("newPlayer", players[socket.id]);
+  })
+  
 
   socket.on("ping", (cb) => {
     console.log("ping");
@@ -75,11 +81,11 @@ io.on("connection", (socket) => {
     io.emit("bomb_activated", bomb);
   });
 
-  socket.emit("currentPlayers", players);
-  socket.broadcast.emit("newPlayer", players[socket.id]);
+  //socket.emit("currentPlayers", players);
+  //socket.broadcast.emit("newPlayer", players[socket.id]);
 
   socket.on("disconnect", () => {
-    console.log(`disconnect ${socket.id}`);
+    console.log(`disconnect ${players[socket.id].name}`);
     delete players[socket.id];
     io.emit("disconnect_player", socket.id);
   });
@@ -102,9 +108,10 @@ io.on("connection", (socket) => {
     });
   });
 });
-
-//const PORT = process.env.SERVER_PORT;
-const PORT = 3000;
+//For production
+const PORT = process.env.SERVER_PORT;
+//For dev
+//const PORT = 3000;
 httpServer.listen(PORT, () => {
   console.log(`Socket.io:bomberman-app server running on port --> ${PORT}`);
 });
