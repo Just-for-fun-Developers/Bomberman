@@ -45,8 +45,16 @@ jobs:
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ env.DOCKER_ACCESS_TOKEN }}
 
+    - name: Set PRODUCTION_HOST
+      run: export PRODUCTION_HOST=${{ vars.PRODUCTION_HOST }}
+
+    - name: Show PRODUCTION_HOST
+      run: echo $PRODUCTION_HOST
+
     - name: Build the Docker Image
       run: docker-compose -f $DOCKER_COMPOSE_FILE build
+      env:
+        PRODUCTION_HOST: ${{ vars.PRODUCTION_HOST}}
 
     - name: Tag the Docker Image
       run: docker tag $DOCKER_USERNAME/bomberman-app:1.0 $DOCKER_USERNAME/bomberman-app:${{ github.event.pull_request.head.sha }}

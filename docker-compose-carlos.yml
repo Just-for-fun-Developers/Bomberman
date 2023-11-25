@@ -4,7 +4,11 @@ version: '3'
 
 services:
   bomberman-app:
-    build: .
+    build:
+      context: .
+      args:
+        SERVER_HOST: ${PRODUCTION_HOST}
+        SERVER_PORT: 3002
     image: carloscyucra/bomberman-app:1.0
     ports:
       - '3002:3002'
