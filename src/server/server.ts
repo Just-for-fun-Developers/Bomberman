@@ -103,7 +103,8 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.SERVER_PORT;
+//const PORT = process.env.SERVER_PORT;
+const PORT = 3000;
 httpServer.listen(PORT, () => {
   console.log(`Socket.io:bomberman-app server running on port --> ${PORT}`);
 });

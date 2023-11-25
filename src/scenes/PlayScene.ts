@@ -22,7 +22,8 @@ class PlayScene extends Phaser.Scene {
   create() {
     // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
     // For now we can create global variables and it as a global variable with your local static IP
-    this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
+    //this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
+    this.socket = io('localhost:3000')
     this.otherPlayers = this.physics.add.group();
     this.scoreTexts = this.add.group();
     this.showPlayers();
