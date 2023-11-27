@@ -8,21 +8,28 @@ class PlayScene extends Phaser.Scene {
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
   otherPlayers: Phaser.Physics.Arcade.Group;
-  scoreTexts: any;
+  scoreTexts: Phaser.GameObjects.Group;
   isMoving: boolean;
   player_dead: boolean;
   amAlive: boolean;
   socket: Socket;
+  playerName: String;
 
   constructor() {
     super("PlayScene");
     this.isMoving = false;
   }
 
+  init(data:{playerName:string}){
+    this.playerName = data.playerName;
+  }
+
   create() {
-    // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
-    // For now we can create global variables and it as a global variable with your local static IP
+    // For production
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
+    // For Dev
+    //this.socket = io('localhost:3000');
+    this.socket.emit('initPlayer', this.playerName);
     this.otherPlayers = this.physics.add.group();
     this.scoreTexts = this.add.group();
     this.showPlayers();
@@ -141,7 +148,7 @@ class PlayScene extends Phaser.Scene {
     );
     this.player_dead = false;
 
-    let scoreText = this.add.text(800, 20, `life: ${playerInfo.lifes}`, {
+    let scoreText = this.add.text(800, 20, `${playerInfo.name}: ${playerInfo.lifes}`, {
       fontSize: "32px",
       color: "#000",
     });
@@ -264,8 +271,7 @@ class PlayScene extends Phaser.Scene {
           }
         }
       });
-      //this.socket.emit("bomb_det", bombSprite);
-
+      
       // Set up overlap check between explosions and player
       let playerHit = false;
       this.physics.add.overlap(
@@ -443,7 +449,7 @@ class PlayScene extends Phaser.Scene {
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
-    let scoreText = this.add.text(800, 20, `life: ${playerInfo.lifes}`, {
+    let scoreText = this.add.text(800, 20, `${playerInfo.name}: ${playerInfo.lifes}`, {
       fontSize: "32px",
       color: "#000",
     });
