@@ -8,26 +8,23 @@ class PlayScene extends Phaser.Scene {
   toys: Phaser.Physics.Arcade.Group;
   blocks: Phaser.Physics.Arcade.Group;
   otherPlayers: Phaser.Physics.Arcade.Group;
-  scoreTexts: any;
+  scoreTexts: Phaser.GameObjects.Group;
   isMoving: boolean;
   player_dead: boolean;
   amAlive: boolean;
   socket: Socket;
-  playerName: any;
+  playerName: String;
 
   constructor() {
     super("PlayScene");
     this.isMoving = false;
   }
 
-  init(data:any){
+  init(data:{playerName:string}){
     this.playerName = data.playerName;
-    console.log(this.playerName)
   }
 
   create() {
-    // TODO: Change here your local IP, I change this so I can test using another computer or my cellphone
-    // For now we can create global variables and it as a global variable with your local static IP
     // For production
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
     // For Dev
@@ -274,8 +271,7 @@ class PlayScene extends Phaser.Scene {
           }
         }
       });
-      //this.socket.emit("bomb_det", bombSprite);
-
+      
       // Set up overlap check between explosions and player
       let playerHit = false;
       this.physics.add.overlap(

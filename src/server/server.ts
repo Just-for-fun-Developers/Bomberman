@@ -81,9 +81,6 @@ io.on("connection", (socket) => {
     io.emit("bomb_activated", bomb);
   });
 
-  //socket.emit("currentPlayers", players);
-  //socket.broadcast.emit("newPlayer", players[socket.id]);
-
   socket.on("disconnect", () => {
     console.log(`disconnect ${players[socket.id].name}`);
     delete players[socket.id];

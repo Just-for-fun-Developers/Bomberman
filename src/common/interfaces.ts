@@ -19,3 +19,9 @@ export const directions = [
   { x: 0, y: 1, name: "Down" },
   { x: 0, y: -1, name: "Up" },
 ];
+
+export interface Menu {
+  scene: string;
+  text: string;
+  textGO?: Phaser.GameObjects.Text;
+}
