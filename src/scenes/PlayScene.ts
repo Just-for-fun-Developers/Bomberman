@@ -14,10 +14,12 @@ class PlayScene extends Phaser.Scene {
   amAlive: boolean;
   socket: Socket;
   playerName: String;
+  playerHit: Boolean;
 
   constructor() {
     super("PlayScene");
     this.isMoving = false;
+    this.playerHit = false;
   }
 
   init(data:{playerName:string}){
@@ -273,16 +275,15 @@ class PlayScene extends Phaser.Scene {
       });
       
       // Set up overlap check between explosions and player
-      let playerHit = false;
       this.physics.add.overlap(
         this.player,
         explosions,
         (player, explosion) => {
-          if (!playerHit) {
+          if (!this.playerHit) {
             this.playerHitByExplosion(player, explosion);
-            playerHit = true;
-            this.time.delayedCall(1000, () => {
-              playerHit = false;
+            this.playerHit = true;
+            this.time.delayedCall(3000, () => {
+              this.playerHit = false;
             });
           }
         },
@@ -300,38 +301,34 @@ class PlayScene extends Phaser.Scene {
   }
 
   playerHitByExplosion(player: any, explosion: any) {
-    this.player_dead = true;
-    player.setVelocity(0, 0);
-    player.anims.play("die");
-
     if (this.amAlive) {
-      this.time.delayedCall(3000, () => {
-        player.setAlpha(1);
-        this.player_dead = false;
-        const startPositionX = player.getData("x_start");
-        const startPositionY = player.getData("y_start");
-        player.enableBody(true, startPositionX, startPositionY, true, true);
-      });
-    }
+      this.player_dead = true;
+      player.setVelocity(0, 0);
+      player.anims.play("die");
 
-    this.socket.emit("playerMovement", {
-      x: this.player.x,
-      y: this.player.y,
-      action: "die",
-    });
-    this.socket.emit("updateScore", {});
+      this.time.delayedCall(3000, () => {
+        if(this.amAlive){
+          this.player_dead = false;
+          const startPositionX = player.getData("x_start");
+          const startPositionY = player.getData("y_start");
+          player.enableBody(true, startPositionX, startPositionY, true, true);
+        }
+      });
+
+      this.socket.emit("playerMovement", {
+        x: this.player.x,
+        y: this.player.y,
+        action: "die",
+      });
+      this.socket.emit("updateScore", {});
+    }
   }
 
   rewriteScore() {
     this.socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
       const player_Id = this.player.getData("playerId");
-      if (
-        playerInfo.player.lifes === 1 &&
-        player_Id == playerInfo.player.playerId
-      ) {
-        this.amAlive = false;
-      }
       if (playerInfo.player.lifes === 0) {
+        this.amAlive = false;
         this.otherPlayers
           .getChildren()
           .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
@@ -346,7 +343,7 @@ class PlayScene extends Phaser.Scene {
         const OtherPlayerId = otherPlayerScoreText.getData("playerId");
         if (playerInfo.player.playerId === OtherPlayerId) {
           if (otherPlayerScoreText) {
-            otherPlayerScoreText.setText(`life: ${playerInfo.player.lifes}`);
+            otherPlayerScoreText.setText(`${playerInfo.player.name}: ${playerInfo.player.lifes}`);
           }
         }
       });
@@ -371,10 +368,12 @@ class PlayScene extends Phaser.Scene {
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
-      this.socket.emit("bomb_activated", {
-        x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
-        y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
-      });
+      if(!this.player_dead){
+        this.socket.emit("bomb_activated", {
+          x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
+          y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
+        });
+      }
     });
   }
 
@@ -519,6 +518,16 @@ class PlayScene extends Phaser.Scene {
             otherPlayer.destroy();
           }
         });
+      //To delete the score text
+      this.scoreTexts.getChildren().forEach((otherPlayerScoreText: any) => {
+        const OtherPlayerId = otherPlayerScoreText.getData("playerId");
+        if (playerId === OtherPlayerId) {
+          if (otherPlayerScoreText) {
+            otherPlayerScoreText.destroy();
+            this.printTextScores();
+          }
+        }
+      });
     });
   }
 
