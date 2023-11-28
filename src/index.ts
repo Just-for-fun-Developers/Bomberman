@@ -1,7 +1,7 @@
-import Phaser from "phaser";
-import PlayScene from "./scenes/PlayScene";
-import PreloadScene from "./scenes/PreloadScene";
-import MenuScene from "./scenes/MenuScene";
+import Phaser from 'phaser';
+import PlayScene from './scenes/PlayScene';
+import PreloadScene from './scenes/PreloadScene';
+import MenuScene from './scenes/MenuScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -10,7 +10,7 @@ const config: Phaser.Types.Core.GameConfig = {
   transparent: true,
   pixelArt: true,
   physics: {
-    default: "arcade",
+    default: 'arcade',
     arcade: {
       debug: true,
     },

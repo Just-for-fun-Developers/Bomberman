@@ -14,10 +14,10 @@ export interface PlayerInfo {
 }
 
 export const directions = [
-  { x: -1, y: 0, name: "Left" },
-  { x: 1, y: 0, name: "Right" },
-  { x: 0, y: 1, name: "Down" },
-  { x: 0, y: -1, name: "Up" },
+  { x: -1, y: 0, name: 'Left' },
+  { x: 1, y: 0, name: 'Right' },
+  { x: 0, y: 1, name: 'Down' },
+  { x: 0, y: -1, name: 'Up' },
 ];
 
 export interface Menu {
