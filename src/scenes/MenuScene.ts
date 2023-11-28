@@ -1,47 +1,47 @@
-import { Menu } from "../common/interfaces";
-import BaseScene from "./BaseScene";
-import { io, Socket } from "socket.io-client";
+import { type Menu } from '../common/interfaces';
+import BaseScene from './BaseScene';
+import { io, type Socket } from 'socket.io-client';
 
-class MenuScene extends BaseScene{
-    menu:Menu[];
-    socket: Socket;
-    playerName: string;
+class MenuScene extends BaseScene {
+  menu: Menu[];
+  socket: Socket;
+  playerName: string;
 
-    constructor(){
-        super('MenuScene');
-        
-        this.menu = [
-            {scene: 'PlayScene', text: 'Play'},
-            {scene: null, text: 'Exit'}
-        ]
-    }
+  constructor() {
+    super('MenuScene');
 
-    create() {
-        super.create();
-        this.playerName = prompt('Ingresa tu Nickname:'); 
-        this.createMenu(this.menu, this.setupMenuEvents.bind(this));
-    }
+    this.menu = [
+      { scene: 'PlayScene', text: 'Play' },
+      { scene: null, text: 'Exit' },
+    ];
+  }
 
-    setupMenuEvents(menuItem:Menu) {
-        const textGO = menuItem.textGO;
-        textGO.setInteractive();
+  create() {
+    super.create();
+    this.playerName = prompt('Ingresa tu Nickname:');
+    this.createMenu(this.menu, this.setupMenuEvents.bind(this));
+  }
 
-        textGO.on('pointerover', () => {
-            textGO.setStyle({fill: '#0f0'});
-        })
+  setupMenuEvents(menuItem: Menu) {
+    const textGO = menuItem.textGO;
+    textGO.setInteractive();
 
-        textGO.on('pointerout', () => {
-            textGO.setStyle({fill: '#fff'});
-        })
+    textGO.on('pointerover', () => {
+      textGO.setStyle({ fill: '#0f0' });
+    });
 
-        textGO.on('pointerup', () => {
-            menuItem.scene && this.scene.start(menuItem.scene, { playerName: this.playerName });
-            if(menuItem.text === 'Exit') {
-                this.game.destroy(true);
-            }
-        })
-    }
+    textGO.on('pointerout', () => {
+      textGO.setStyle({ fill: '#fff' });
+    });
 
+    textGO.on('pointerup', () => {
+      menuItem.scene &&
+        this.scene.start(menuItem.scene, { playerName: this.playerName });
+      if (menuItem.text === 'Exit') {
+        this.game.destroy(true);
+      }
+    });
+  }
 }
 
 export default MenuScene;
