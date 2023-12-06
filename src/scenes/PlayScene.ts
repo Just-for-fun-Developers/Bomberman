@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { io, Socket } from "socket.io-client";
 import { directions, Maze, PlayerInfo } from "../common/interfaces";
+import { generateSessionHash } from "../common/utils";
 
 class PlayScene extends Phaser.Scene {
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -15,6 +16,8 @@ class PlayScene extends Phaser.Scene {
   socket: Socket;
   playerName: String;
   playerHit: Boolean;
+  newSession: Boolean;
+  session: number;
 
   constructor() {
     super("PlayScene");
@@ -22,8 +25,9 @@ class PlayScene extends Phaser.Scene {
     this.playerHit = false;
   }
 
-  init(data:{playerName:string}){
+  init(data: { playerName: string; newSession: boolean }) {
     this.playerName = data.playerName;
+    this.newSession = data.newSession;
   }
 
   create() {
@@ -31,7 +35,23 @@ class PlayScene extends Phaser.Scene {
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
     // For Dev
     //this.socket = io('localhost:3000');
-    this.socket.emit('initPlayer', this.playerName);
+    if (this.newSession) {
+      const sessionHash = generateSessionHash();
+      this.session = sessionHash;
+    } else {
+      const sessionHash = prompt("Ingresa session hash:");
+      this.session = parseInt(sessionHash);
+    }
+    // Update the div with the player's session
+    const sessionDiv = document.getElementById("session-display");
+    if (sessionDiv) {
+      sessionDiv.innerText = `session Hash: ${this.session}`;
+    }
+
+    this.socket.emit("initPlayer", {
+      name: this.playerName,
+      session: this.session,
+    });
     this.otherPlayers = this.physics.add.group();
     this.scoreTexts = this.add.group();
     this.showPlayers();
@@ -150,10 +170,15 @@ class PlayScene extends Phaser.Scene {
     );
     this.player_dead = false;
 
-    let scoreText = this.add.text(800, 20, `${playerInfo.name}: ${playerInfo.lifes}`, {
-      fontSize: "32px",
-      color: "#000",
-    });
+    let scoreText = this.add.text(
+      800,
+      20,
+      `${playerInfo.name}: ${playerInfo.lifes}`,
+      {
+        fontSize: "32px",
+        color: "#000",
+      }
+    );
     scoreText.setVisible(false);
     scoreText.setData("playerId", playerInfo.playerId);
     scoreText.setStyle({ color: "#" + playerInfo.color.substring(2) });
@@ -273,7 +298,7 @@ class PlayScene extends Phaser.Scene {
           }
         }
       });
-      
+
       // Set up overlap check between explosions and player
       this.physics.add.overlap(
         this.player,
@@ -307,7 +332,7 @@ class PlayScene extends Phaser.Scene {
       player.anims.play("die");
 
       this.time.delayedCall(3000, () => {
-        if(this.amAlive){
+        if (this.amAlive) {
           this.player_dead = false;
           const startPositionX = player.getData("x_start");
           const startPositionY = player.getData("y_start");
@@ -343,7 +368,9 @@ class PlayScene extends Phaser.Scene {
         const OtherPlayerId = otherPlayerScoreText.getData("playerId");
         if (playerInfo.player.playerId === OtherPlayerId) {
           if (otherPlayerScoreText) {
-            otherPlayerScoreText.setText(`${playerInfo.player.name}: ${playerInfo.player.lifes}`);
+            otherPlayerScoreText.setText(
+              `${playerInfo.player.name}: ${playerInfo.player.lifes}`
+            );
           }
         }
       });
@@ -368,7 +395,7 @@ class PlayScene extends Phaser.Scene {
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
-      if(!this.player_dead){
+      if (!this.player_dead) {
         this.socket.emit("bomb_activated", {
           x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
           y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
@@ -448,23 +475,29 @@ class PlayScene extends Phaser.Scene {
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
-    let scoreText = this.add.text(800, 20, `${playerInfo.name}: ${playerInfo.lifes}`, {
-      fontSize: "32px",
-      color: "#000",
-    });
+    let scoreText = this.add.text(
+      800,
+      20,
+      `${playerInfo.name}: ${playerInfo.lifes}`,
+      {
+        fontSize: "32px",
+        color: "#000",
+      }
+    );
     scoreText.setVisible(false);
     scoreText.setData("playerId", playerInfo.playerId);
     scoreText.setStyle({ color: "#" + playerInfo.color.substring(2) });
     this.scoreTexts.add(scoreText);
     this.printTextScores();
   }
+
   showPlayers() {
     this.socket.on(
       "currentPlayers",
       (players: { [key: string]: PlayerInfo }) => {
         Object.keys(players).forEach((id) => {
           if (players[id].playerId === this.socket.id) {
-            this.createPlayer(players[id]);
+            if (this.player === undefined) this.createPlayer(players[id]);
           } else {
             this.addOtherPlayers(players[id]);
           }

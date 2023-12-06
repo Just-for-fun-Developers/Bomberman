@@ -2,46 +2,61 @@ import { Menu } from "../common/interfaces";
 import BaseScene from "./BaseScene";
 import { io, Socket } from "socket.io-client";
 
-class MenuScene extends BaseScene{
-    menu:Menu[];
-    socket: Socket;
-    playerName: string;
+const NEW_SESSION = "Play (New Session)";
+const JOIN_SESSION = "Play (Join Session)";
+const EXIT = "Exit";
 
-    constructor(){
-        super('MenuScene');
-        
-        this.menu = [
-            {scene: 'PlayScene', text: 'Play'},
-            {scene: null, text: 'Exit'}
-        ]
-    }
+class MenuScene extends BaseScene {
+  menu: Menu[];
+  socket: Socket;
+  playerName: string;
 
-    create() {
-        super.create();
-        this.playerName = prompt('Ingresa tu Nickname:'); 
-        this.createMenu(this.menu, this.setupMenuEvents.bind(this));
-    }
+  constructor() {
+    super("MenuScene");
 
-    setupMenuEvents(menuItem:Menu) {
-        const textGO = menuItem.textGO;
-        textGO.setInteractive();
+    this.menu = [
+      { scene: "PlayScene", text: NEW_SESSION },
+      { scene: "PlayScene", text: JOIN_SESSION },
+      { scene: null, text: EXIT },
+    ];
+  }
 
-        textGO.on('pointerover', () => {
-            textGO.setStyle({fill: '#0f0'});
-        })
+  create() {
+    super.create();
+    this.playerName = prompt("Ingresa tu Nickname:");
+    this.createMenu(this.menu, this.setupMenuEvents.bind(this));
+  }
 
-        textGO.on('pointerout', () => {
-            textGO.setStyle({fill: '#fff'});
-        })
+  setupMenuEvents(menuItem: Menu) {
+    const textGO = menuItem.textGO;
+    textGO.setInteractive();
 
-        textGO.on('pointerup', () => {
-            menuItem.scene && this.scene.start(menuItem.scene, { playerName: this.playerName });
-            if(menuItem.text === 'Exit') {
-                this.game.destroy(true);
-            }
-        })
-    }
+    textGO.on("pointerover", () => {
+      textGO.setStyle({ fill: "#0f0" });
+    });
 
+    textGO.on("pointerout", () => {
+      textGO.setStyle({ fill: "#fff" });
+    });
+
+    textGO.on("pointerup", () => {
+      if (menuItem.text === NEW_SESSION) {
+        menuItem.scene &&
+          this.scene.start(menuItem.scene, {
+            playerName: this.playerName,
+            newSession: true,
+          });
+      } else if (menuItem.text === JOIN_SESSION) {
+        menuItem.scene &&
+          this.scene.start(menuItem.scene, {
+            playerName: this.playerName,
+            newSession: false,
+          });
+      } else if (menuItem.text === EXIT) {
+        this.game.destroy(true);
+      }
+    });
+  }
 }
 
 export default MenuScene;
