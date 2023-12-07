@@ -16,6 +16,8 @@ const config: Phaser.Types.Core.GameConfig = {
     },
   },
   scene: [PreloadScene, MenuScene, PlayScene],
+  // Parent element
+  parent: "game-container",
 };
 
 new Phaser.Game(config);

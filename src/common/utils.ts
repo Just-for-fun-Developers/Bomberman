@@ -13,3 +13,16 @@ export function swapValues(
 export function between(a: number, b: number): number {
   return Math.floor(Math.random() * (b - a + 1)) + a;
 }
+
+// TODO: verify that this generate different hashs
+export function generateSessionHash() {
+  const now = new Date().getTime();
+  const random = Math.random() * 10000000000000000;
+  const combined = `${now}-${random}`;
+  const hash = combined.split("").reduce((hash, char) => {
+    const chr = (hash << 5) - hash + char.charCodeAt(0);
+    return chr & chr;
+  }, 0);
+
+  return hash < 0 ? -hash : hash;
+}
