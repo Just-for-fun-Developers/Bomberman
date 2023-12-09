@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { createMaze } from "./Maze";
 import { Maze, PlayerInfo } from "../common/interfaces";
 import express from "express";
+import { logger } from "./logger";
 
 const app = express();
 const httpServer = createServer(app);
@@ -20,12 +21,12 @@ const players: { [key: string]: PlayerInfo } = {};
 let game_maze: Maze = {} as Maze;
 
 //To position a new player in a random free place
-function CreateNewPlayer(socketId: string, playerName: any) {
+function CreateNewPlayer(socketId: string, playerName: string) {
   let isIn: boolean;
   isIn = true;
   while (isIn) {
     const rangValue = game_maze.rows * game_maze.columns - 1;
-    let randomValue = Math.floor(Math.random() * rangValue);
+    const randomValue = Math.floor(Math.random() * rangValue);
     const row = Math.floor(randomValue / game_maze.rows);
     const col = Math.floor(randomValue % game_maze.columns);
     if (game_maze.data[row][col] === 0) {
@@ -57,7 +58,7 @@ const ROWS = 10;
 const COLS = 10;
 const PERCENTAGE_OCCUPIED = 0.5;
 
-let sessionMap: Map<string, string> = new Map();
+const sessionMap: Map<string, string> = new Map();
 
 io.on("connection", (socket) => {
   //console.log(`connect ${socket.id}`);
@@ -67,7 +68,7 @@ io.on("connection", (socket) => {
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
   socket.on("initPlayer", (playerInfo: { name: string; session: number }) => {
-    console.log(
+    logger.info(
       `connect player: ${playerInfo.name} to the session: ${playerInfo.session}`
     );
     CreateNewPlayer(socket.id, playerInfo.name);
@@ -86,7 +87,7 @@ io.on("connection", (socket) => {
     io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
   });
 
-  socket.on("bomb_activated", (bomb: { x: Number; y: number }) => {
+  socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
     io.to(sessionMap.get(socket.id)).emit("bomb_activated", bomb);
   });
 

@@ -14,9 +14,9 @@ class PlayScene extends Phaser.Scene {
   player_dead: boolean;
   amAlive: boolean;
   socket: Socket;
-  playerName: String;
-  playerHit: Boolean;
-  newSession: Boolean;
+  playerName: string;
+  playerHit: boolean;
+  newSession: boolean;
   session: number;
 
   constructor() {
@@ -120,7 +120,7 @@ class PlayScene extends Phaser.Scene {
   createToys(toys: number, game_maze: Maze) {
     this.toys = this.physics.add.group();
     while (toys > 0) {
-      let randomValue = Phaser.Math.Between(
+      const randomValue = Phaser.Math.Between(
         0,
         game_maze.rows * game_maze.columns - 1
       );
@@ -170,7 +170,7 @@ class PlayScene extends Phaser.Scene {
     );
     this.player_dead = false;
 
-    let scoreText = this.add.text(
+    const scoreText = this.add.text(
       800,
       20,
       `${playerInfo.name}: ${playerInfo.lifes}`,
@@ -246,7 +246,7 @@ class PlayScene extends Phaser.Scene {
 
   checkOverlapWithBlocksAt(x: number, y: number) {
     // Create a small temporary sprite at the position
-    let tempSprite = this.physics.add
+    const tempSprite = this.physics.add
       .sprite(x, y, null)
       .setSize(1, 1)
       .setOrigin(0, 0);
@@ -265,18 +265,16 @@ class PlayScene extends Phaser.Scene {
 
   bombActivated() {
     this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
-      let explosions = this.physics.add.group();
+      const explosions = this.physics.add.group();
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
       this.time.delayedCall(2000, () => {
         bombSprite.destroy();
-        const aux = this.player.getData("playerId");
-
-        for (let direction of directions) {
+        for (const direction of directions) {
           for (let i = 0; i < 3; i++) {
             const newX = bombSprite.x + 64 * i * direction.x;
             const newY = bombSprite.y + 64 * i * direction.y;
             if (!this.checkOverlapWithBlocksAt(newX, newY)) {
-              let explotion = explosions
+              const explotion = explosions
                 .create(newX, newY, "explosion")
                 .anims.play("explode");
 
@@ -285,7 +283,7 @@ class PlayScene extends Phaser.Scene {
                 explotion.destroy();
               });
             } else {
-              let explotion = explosions
+              const explotion = explosions
                 .create(newX, newY, "explosion")
                 .anims.play("explode");
 
@@ -303,9 +301,9 @@ class PlayScene extends Phaser.Scene {
       this.physics.add.overlap(
         this.player,
         explosions,
-        (player, explosion) => {
+        (player: Phaser.Physics.Arcade.Sprite, _explosion) => {
           if (!this.playerHit) {
-            this.playerHitByExplosion(player, explosion);
+            this.playerHitByExplosion(player);
             this.playerHit = true;
             this.time.delayedCall(3000, () => {
               this.playerHit = false;
@@ -325,7 +323,7 @@ class PlayScene extends Phaser.Scene {
     });
   }
 
-  playerHitByExplosion(player: any, explosion: any) {
+  playerHitByExplosion(player: Phaser.Physics.Arcade.Sprite) {
     if (this.amAlive) {
       this.player_dead = true;
       player.setVelocity(0, 0);
@@ -351,7 +349,6 @@ class PlayScene extends Phaser.Scene {
 
   rewriteScore() {
     this.socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
-      const player_Id = this.player.getData("playerId");
       if (playerInfo.player.lifes === 0) {
         this.amAlive = false;
         this.otherPlayers
@@ -364,16 +361,18 @@ class PlayScene extends Phaser.Scene {
           });
       }
 
-      this.scoreTexts.getChildren().forEach((otherPlayerScoreText: any) => {
-        const OtherPlayerId = otherPlayerScoreText.getData("playerId");
-        if (playerInfo.player.playerId === OtherPlayerId) {
-          if (otherPlayerScoreText) {
-            otherPlayerScoreText.setText(
-              `${playerInfo.player.name}: ${playerInfo.player.lifes}`
-            );
+      this.scoreTexts
+        .getChildren()
+        .forEach((otherPlayerScoreText: Phaser.GameObjects.Text) => {
+          const OtherPlayerId = otherPlayerScoreText.getData("playerId");
+          if (playerInfo.player.playerId === OtherPlayerId) {
+            if (otherPlayerScoreText) {
+              otherPlayerScoreText.setText(
+                `${playerInfo.player.name}: ${playerInfo.player.lifes}`
+              );
+            }
           }
-        }
-      });
+        });
     });
   }
 
@@ -426,8 +425,8 @@ class PlayScene extends Phaser.Scene {
 
       this.player.anims.play(action, true);
       // emit player movement
-      let x = this.player.x;
-      let y = this.player.y;
+      const x = this.player.x;
+      const y = this.player.y;
       if (this.player.getData("oldPosition")) {
         const oldPosition = this.player.getData("oldPosition");
         if (x !== oldPosition.x || y !== oldPosition.y) {
@@ -475,7 +474,7 @@ class PlayScene extends Phaser.Scene {
 
     otherPlayer.setData("playerId", playerInfo.playerId);
     this.otherPlayers.add(otherPlayer);
-    let scoreText = this.add.text(
+    const scoreText = this.add.text(
       800,
       20,
       `${playerInfo.name}: ${playerInfo.lifes}`,
@@ -552,27 +551,31 @@ class PlayScene extends Phaser.Scene {
           }
         });
       //To delete the score text
-      this.scoreTexts.getChildren().forEach((otherPlayerScoreText: any) => {
-        const OtherPlayerId = otherPlayerScoreText.getData("playerId");
-        if (playerId === OtherPlayerId) {
-          if (otherPlayerScoreText) {
-            otherPlayerScoreText.destroy();
-            this.printTextScores();
+      this.scoreTexts
+        .getChildren()
+        .forEach((otherPlayerScoreText: Phaser.GameObjects.Text) => {
+          const OtherPlayerId = otherPlayerScoreText.getData("playerId");
+          if (playerId === OtherPlayerId) {
+            if (otherPlayerScoreText) {
+              otherPlayerScoreText.destroy();
+              this.printTextScores();
+            }
           }
-        }
-      });
+        });
     });
   }
 
   printTextScores() {
-    this.scoreTexts.getChildren().forEach((textObject: any, index: number) => {
-      if (textObject instanceof Phaser.GameObjects.Text) {
-        const xPos = 800;
-        const yPos = 20 + index * 60;
-        textObject.setPosition(xPos, yPos);
-        textObject.setVisible(true);
-      }
-    });
+    this.scoreTexts
+      .getChildren()
+      .forEach((textObject: Phaser.GameObjects.Text, index: number) => {
+        if (textObject instanceof Phaser.GameObjects.Text) {
+          const xPos = 800;
+          const yPos = 20 + index * 60;
+          textObject.setPosition(xPos, yPos);
+          textObject.setVisible(true);
+        }
+      });
   }
 }
 
