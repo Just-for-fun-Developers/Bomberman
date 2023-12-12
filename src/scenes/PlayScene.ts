@@ -500,6 +500,8 @@ class PlayScene extends Phaser.Scene {
     socket.on(
       "currentPlayers",
       (players: { [key: string]: PlayerInfo }) => {
+        console.log(`game:`)
+        console.log(players)
         Object.keys(players).forEach((id) => {
           if (players[id].playerId === socket.id) {
             if (this.player === undefined) this.createPlayer(players[id]);
