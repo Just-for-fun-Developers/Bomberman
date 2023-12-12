@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import PlayScene from "./scenes/PlayScene";
 import PreloadScene from "./scenes/PreloadScene";
 import MenuScene from "./scenes/MenuScene";
+import RoomScene from "./scenes/RoomScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -15,7 +16,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: true,
     },
   },
-  scene: [PreloadScene, MenuScene, PlayScene],
+  scene: [PreloadScene, MenuScene, RoomScene, PlayScene],
   // Parent element
   parent: "game-container",
 };
