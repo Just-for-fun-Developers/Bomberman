@@ -14,6 +14,10 @@ const io = new Server(httpServer, {
   },
 });
 
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
+
 app.use(express.static("build"));
 
 const players: { [key: string]: PlayerInfo } = {};
