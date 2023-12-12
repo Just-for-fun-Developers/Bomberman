@@ -15,8 +15,8 @@ class MenuScene extends BaseScene {
     super("MenuScene");
 
     this.menu = [
-      { scene: "PlayScene", text: NEW_SESSION },
-      { scene: "PlayScene", text: JOIN_SESSION },
+      { scene: "RoomScene", text: NEW_SESSION },
+      { scene: "RoomScene", text: JOIN_SESSION },
       { scene: null, text: EXIT },
     ];
   }

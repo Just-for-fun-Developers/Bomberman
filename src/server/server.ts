@@ -71,13 +71,32 @@ io.on("connection", (socket) => {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
+
   socket.on("initPlayer", (playerInfo: { name: string; session: number }) => {
     logger.info(
       `connect player: ${playerInfo.name} to the session: ${playerInfo.session}`
     );
-    CreateNewPlayer(socket.id, playerInfo.name);
     sessionMap.set(socket.id, playerInfo.session.toString());
     socket.join(sessionMap.get(socket.id));
+    
+    CreateNewPlayer(socket.id, playerInfo.name);
+    /*io.to(socket.id).emit("game_maze", game_maze);*/
+    socket.to(sessionMap.get(socket.id)).emit("newPlayerText", players[socket.id]);
+
+    const sessionPlayers = Object.entries(players)
+      .filter(
+        ([key, _]) => sessionMap.get(key) === playerInfo.session.toString()
+      )
+      .map(([key, value]) => {
+        return { key, ...value };
+      });
+    io.to(sessionMap.get(socket.id)).emit("currentPlayersText", sessionPlayers); 
+  });
+
+  //############################
+  socket.on("startGame", (playerInfo: { name: string; session: number }) => {
+    console.log("GAME STARTED")
+    //CreateNewPlayer(socket.id, playerInfo.name);
     io.to(socket.id).emit("game_maze", game_maze);
     socket.to(sessionMap.get(socket.id)).emit("newPlayer", players[socket.id]);
 
@@ -90,6 +109,11 @@ io.on("connection", (socket) => {
       });
     io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
   });
+  //############################
+  socket.on("startPlayScene", ()=>{
+    io.to(sessionMap.get(socket.id)).emit("play");
+  });
+  //############################
 
   socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
     io.to(sessionMap.get(socket.id)).emit("bomb_activated", bomb);

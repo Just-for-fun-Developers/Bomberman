@@ -1,7 +1,8 @@
 import Phaser from "phaser";
-import { io, Socket } from "socket.io-client";
+import socket from "../server/socket-io"
+//import { io, Socket } from "socket.io-client";
 import { directions, Maze, PlayerInfo } from "../common/interfaces";
-import { generateSessionHash } from "../common/utils";
+//import { generateSessionHash } from "../common/utils";
 
 class PlayScene extends Phaser.Scene {
   player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -13,7 +14,7 @@ class PlayScene extends Phaser.Scene {
   isMoving: boolean;
   player_dead: boolean;
   amAlive: boolean;
-  socket: Socket;
+  //socket: Socket;
   playerName: string;
   playerHit: boolean;
   newSession: boolean;
@@ -25,30 +26,34 @@ class PlayScene extends Phaser.Scene {
     this.playerHit = false;
   }
 
-  init(data: { playerName: string; newSession: boolean }) {
+  init(data: { playerName: string; session: number }) {
     this.playerName = data.playerName;
-    this.newSession = data.newSession;
+    this.session = data.session;
   }
 
   create() {
     // For production
-    this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
+    //this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
     // For Dev
     //this.socket = io('localhost:3000');
-    if (this.newSession) {
+    /* if (this.newSession) {
       const sessionHash = generateSessionHash();
       this.session = sessionHash;
     } else {
       const sessionHash = prompt("Ingresa session hash:");
       this.session = parseInt(sessionHash);
-    }
+    } */
     // Update the div with the player's session
     const sessionDiv = document.getElementById("session-display");
     if (sessionDiv) {
       sessionDiv.innerText = `session Hash: ${this.session}`;
     }
 
-    this.socket.emit("initPlayer", {
+    /* socket.emit("initPlayer", {
+      name: this.playerName,
+      session: this.session,
+    }); */
+    socket.emit("startGame", {
       name: this.playerName,
       session: this.session,
     });
@@ -68,6 +73,7 @@ class PlayScene extends Phaser.Scene {
     this.bombInteraction();
 
     this.rewriteScore();
+    console.log("working...")
   }
 
   update() {
@@ -76,7 +82,7 @@ class PlayScene extends Phaser.Scene {
 
   createMazeBySocket() {
     this.blocks = this.physics.add.group();
-    this.socket.on("game_maze", (game_maze: Maze) => {
+    socket.on("game_maze", (game_maze: Maze) => {
       for (let row = 0; row < game_maze.rows; row++) {
         for (let col = 0; col < game_maze.columns; col++) {
           const cellValue = game_maze.data[row][col];
@@ -264,7 +270,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   bombActivated() {
-    this.socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
+    socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
       const explosions = this.physics.add.group();
       const bombSprite = this.add.sprite(bomb.x, bomb.y, "bomb").setScale(2.5);
       this.time.delayedCall(2000, () => {
@@ -338,17 +344,17 @@ class PlayScene extends Phaser.Scene {
         }
       });
 
-      this.socket.emit("playerMovement", {
+      socket.emit("playerMovement", {
         x: this.player.x,
         y: this.player.y,
         action: "die",
       });
-      this.socket.emit("updateScore", {});
+      socket.emit("updateScore", {});
     }
   }
 
   rewriteScore() {
-    this.socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
+    socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
       if (playerInfo.player.lifes === 0) {
         this.amAlive = false;
         this.otherPlayers
@@ -395,7 +401,7 @@ class PlayScene extends Phaser.Scene {
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
       if (!this.player_dead) {
-        this.socket.emit("bomb_activated", {
+        socket.emit("bomb_activated", {
           x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
           y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
         });
@@ -430,13 +436,13 @@ class PlayScene extends Phaser.Scene {
       if (this.player.getData("oldPosition")) {
         const oldPosition = this.player.getData("oldPosition");
         if (x !== oldPosition.x || y !== oldPosition.y) {
-          this.socket.emit("playerMovement", {
+          socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
             action: action,
           });
         } else {
-          this.socket.emit("playerMovement", {
+          socket.emit("playerMovement", {
             x: this.player.x,
             y: this.player.y,
             action: action,
@@ -459,7 +465,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   createOtherPlayer() {
-    this.socket.on("newPlayer", (playerInfo: PlayerInfo) => {
+    socket.on("newPlayer", (playerInfo: PlayerInfo) => {
       this.addOtherPlayers(playerInfo);
     });
   }
@@ -491,11 +497,13 @@ class PlayScene extends Phaser.Scene {
   }
 
   showPlayers() {
-    this.socket.on(
+    socket.on(
       "currentPlayers",
       (players: { [key: string]: PlayerInfo }) => {
+        console.log(`game:`)
+        console.log(players)
         Object.keys(players).forEach((id) => {
-          if (players[id].playerId === this.socket.id) {
+          if (players[id].playerId === socket.id) {
             if (this.player === undefined) this.createPlayer(players[id]);
           } else {
             this.addOtherPlayers(players[id]);
@@ -506,7 +514,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   detectPlayerMovement() {
-    this.socket.on(
+    socket.on(
       "playerMoved",
       (playerInfo: { player: PlayerInfo; action: string }) => {
         this.otherPlayers
@@ -541,7 +549,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   detectDisconnectedPlayer() {
-    this.socket.on("disconnect_player", (playerId: string) => {
+    socket.on("disconnect_player", (playerId: string) => {
       this.otherPlayers
         .getChildren()
         .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
