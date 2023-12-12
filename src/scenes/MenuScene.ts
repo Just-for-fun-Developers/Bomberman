@@ -1,6 +1,6 @@
 import { Menu } from "../common/interfaces";
 import BaseScene from "./BaseScene";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 
 const NEW_SESSION = "Play (New Session)";
 const JOIN_SESSION = "Play (Join Session)";
