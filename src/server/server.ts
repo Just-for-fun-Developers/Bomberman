@@ -91,6 +91,11 @@ io.on("connection", (socket) => {
     io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
   });
 
+  socket.on("start_game", (data: { session: string }) => {
+    logger.info("start game for session = ", data.session);
+    io.to(sessionMap.get(socket.id)).emit("start_game", {});
+  });
+
   socket.on("bomb_activated", (bomb: { x: number; y: number }) => {
     io.to(sessionMap.get(socket.id)).emit("bomb_activated", bomb);
   });

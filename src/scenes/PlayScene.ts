@@ -18,6 +18,7 @@ class PlayScene extends Phaser.Scene {
   playerHit: boolean;
   newSession: boolean;
   session: number;
+  startGame: boolean;
 
   constructor() {
     super("PlayScene");
@@ -28,6 +29,7 @@ class PlayScene extends Phaser.Scene {
   init(data: { playerName: string; newSession: boolean }) {
     this.playerName = data.playerName;
     this.newSession = data.newSession;
+    this.startGame = false;
   }
 
   create() {
@@ -52,6 +54,9 @@ class PlayScene extends Phaser.Scene {
       name: this.playerName,
       session: this.session,
     });
+
+    this.startGameLogic();
+
     this.otherPlayers = this.physics.add.group();
     this.scoreTexts = this.add.group();
     this.showPlayers();
@@ -68,6 +73,25 @@ class PlayScene extends Phaser.Scene {
     this.bombInteraction();
 
     this.rewriteScore();
+  }
+
+  startGameLogic() {
+    document.getElementById("PlayButton").style.display = "block";
+
+    const playButton = document.getElementById("PlayButton");
+    if (playButton) {
+      playButton.addEventListener("click", () => {
+        this.socket.emit("start_game", {
+          session: this.session,
+        });
+      });
+    }
+
+    this.socket.on("start_game", () => {
+      this.startGame = true;
+      console.log("start game!!!!");
+      document.getElementById("PlayButton").style.display = "none";
+    });
   }
 
   update() {
@@ -326,7 +350,7 @@ class PlayScene extends Phaser.Scene {
   playerHitByExplosion(player: Phaser.Physics.Arcade.Sprite) {
     if (this.amAlive) {
       this.player_dead = true;
-      player.setVelocity(0, 0);
+      if (this.startGame === true) player.setVelocity(0, 0);
       player.anims.play("die");
 
       this.time.delayedCall(3000, () => {
@@ -394,7 +418,7 @@ class PlayScene extends Phaser.Scene {
 
   bombInteraction() {
     this.input.keyboard.on("keydown-SPACE", () => {
-      if (!this.player_dead) {
+      if (!this.player_dead && this.startGame === true) {
         this.socket.emit("bomb_activated", {
           x: this.player.x + 32 - ((this.player.x + 32) % 64) + 32,
           y: this.player.y + 32 - ((this.player.y + 32) % 64) + 32,
@@ -408,19 +432,19 @@ class PlayScene extends Phaser.Scene {
       let action = "turn";
       if (this.cursors.left.isDown) {
         action = "walk_left";
-        this.player.setVelocityX(-160);
+        if (this.startGame === true) this.player.setVelocityX(-160);
       } else if (this.cursors.right.isDown) {
         action = "walk_right";
-        this.player.setVelocityX(160);
+        if (this.startGame === true) this.player.setVelocityX(160);
       } else if (this.cursors.up.isDown) {
         action = "walk_up";
-        this.player.setVelocityY(-160);
+        if (this.startGame === true) this.player.setVelocityY(-160);
       } else if (this.cursors.down.isDown) {
         action = "walk_down";
-        this.player.setVelocityY(160);
+        if (this.startGame === true) this.player.setVelocityY(160);
       } else {
-        this.player.setVelocityX(0);
-        this.player.setVelocityY(0);
+        if (this.startGame === true) this.player.setVelocityX(0);
+        if (this.startGame === true) this.player.setVelocityY(0);
       }
 
       this.player.anims.play(action, true);
