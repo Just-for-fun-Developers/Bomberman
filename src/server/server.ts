@@ -63,36 +63,48 @@ const COLS = 10;
 const PERCENTAGE_OCCUPIED = 0.5;
 
 const sessionMap: Map<string, string> = new Map();
+const gameStartedSession: Map<string, boolean> = new Map();
 
 io.on("connection", (socket) => {
   //console.log(`connect ${socket.id}`);
-
   if (newMaze === undefined) {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
-  socket.on("initPlayer", (playerInfo: { name: string; session: number }) => {
-    logger.info(
-      `connect player: ${playerInfo.name} to the session: ${playerInfo.session}`
-    );
-    CreateNewPlayer(socket.id, playerInfo.name);
-    sessionMap.set(socket.id, playerInfo.session.toString());
-    socket.join(sessionMap.get(socket.id));
-    io.to(socket.id).emit("game_maze", game_maze);
-    socket.to(sessionMap.get(socket.id)).emit("newPlayer", players[socket.id]);
-
-    const sessionPlayers = Object.entries(players)
-      .filter(
-        ([key, _]) => sessionMap.get(key) === playerInfo.session.toString()
-      )
-      .map(([key, value]) => {
-        return { key, ...value };
-      });
-    io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
+  socket.on("initPlayer", (playerInfo: { name: string; session: number, newSession: boolean }) => {
+    if (playerInfo.newSession) {
+      gameStartedSession.set(playerInfo.session.toString(), false);
+    }
+    if (!gameStartedSession.get(playerInfo.session.toString())) {
+      logger.info(
+        `connect player: ${playerInfo.name} to the session: ${playerInfo.session}`
+      );
+      CreateNewPlayer(socket.id, playerInfo.name);
+      sessionMap.set(socket.id, playerInfo.session.toString());
+      socket.join(sessionMap.get(socket.id));
+      io.to(socket.id).emit("game_maze", game_maze);
+      socket.to(sessionMap.get(socket.id)).emit("newPlayer", players[socket.id]);
+  
+      const sessionPlayers = Object.entries(players)
+        .filter(
+          ([key, _]) => sessionMap.get(key) === playerInfo.session.toString()
+        )
+        .map(([key, value]) => {
+          return { key, ...value };
+        });
+      //io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
+      socket.emit("currentPlayers", sessionPlayers);
+    } else {
+      console.log("no enter game")
+      socket.emit('gameAlreadyStarted');
+      //socket.emit('gameAlreadyStarted');
+      //socket.disconnect(true);
+    }
   });
 
   socket.on("start_game", (data: { session: string }) => {
     logger.info("start game for session = ", data.session);
+    gameStartedSession.set(data.session.toString(), true);
     io.to(sessionMap.get(socket.id)).emit("start_game", {});
   });
 
