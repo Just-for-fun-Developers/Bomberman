@@ -56,7 +56,6 @@ class PlayScene extends Phaser.Scene {
       newSession: this.newSession
     });
     this.socket.on('gameAlreadyStarted', () => {
-      console.log('Sorry, the game has already started. You cannot join now.');
       this.scene.start("MenuScene");
     });
 
@@ -94,7 +93,6 @@ class PlayScene extends Phaser.Scene {
 
     this.socket.on("start_game", () => {
       this.startGame = true;
-      console.log("start game!!!!");
       document.getElementById("PlayButton").style.display = "none";
     });
   }
@@ -213,7 +211,6 @@ class PlayScene extends Phaser.Scene {
     scoreText.setStyle({ color: "#" + playerInfo.color.substring(2) });
     this.scoreTexts.add(scoreText);
     this.printTextScores();
-    console.log("CREATE PLAYER")
   }
 
   animateBomb() {
@@ -518,24 +515,19 @@ class PlayScene extends Phaser.Scene {
     scoreText.setStyle({ color: "#" + playerInfo.color.substring(2) });
     this.scoreTexts.add(scoreText);
     this.printTextScores();
-    console.log("addOtherPlayers")
   }
 
   showPlayers() {
     this.socket.on(
       "currentPlayers",
       (players: { [key: string]: PlayerInfo }) => {
-        console.log(players);
         Object.keys(players).forEach((id) => {
           if (players[id].playerId === this.socket.id) {
-            console.log(this.player)
             if (this.player === undefined) this.createPlayer(players[id]);
           } else {
-            console.log("Other Player")
             this.addOtherPlayers(players[id]);
           }
         });
-        console.log(this.otherPlayers)
       }
     );
   }

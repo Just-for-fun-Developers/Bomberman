@@ -66,7 +66,6 @@ const sessionMap: Map<string, string> = new Map();
 const gameStartedSession: Map<string, boolean> = new Map();
 
 io.on("connection", (socket) => {
-  //console.log(`connect ${socket.id}`);
   if (newMaze === undefined) {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
@@ -95,7 +94,9 @@ io.on("connection", (socket) => {
       //io.to(sessionMap.get(socket.id)).emit("currentPlayers", sessionPlayers);
       socket.emit("currentPlayers", sessionPlayers);
     } else {
-      console.log("no enter game")
+      logger.info(
+        `Player ${playerInfo.name} tried to connect to session ${playerInfo.session}, access denied (Game Already Started)`
+      );
       socket.emit('gameAlreadyStarted');
       //socket.emit('gameAlreadyStarted');
       //socket.disconnect(true);
@@ -113,7 +114,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log(`disconnect ${players[socket.id].name}`);
+    logger.info(
+      `disconnect player: ${players[socket.id].name}`
+    );
     delete players[socket.id];
     io.to(sessionMap.get(socket.id)).emit("disconnect_player", socket.id);
     socket.leave(sessionMap.get(socket.id));
