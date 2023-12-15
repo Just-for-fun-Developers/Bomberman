@@ -77,6 +77,8 @@ class PlayScene extends Phaser.Scene {
     this.bombInteraction();
 
     this.rewriteScore();
+
+    this.endGame();
   }
 
   startGameLogic() {
@@ -603,6 +605,35 @@ class PlayScene extends Phaser.Scene {
           textObject.setVisible(true);
         }
       });
+  }
+
+  endGame() {
+    this.socket.on("endGame", (winner: PlayerInfo)=>{
+      let text = '¡Ganaste! :)';
+      if( this.player.getData("playerId") != winner.playerId){
+        text = 'Perdiste... :('
+      }
+      const alertText = this.add.text(
+        1100 / 2,
+        800 / 2,
+        text,
+        {
+          fontSize: '32px',
+          color: '#fff',
+          backgroundColor: '#000',
+          padding: {
+            x: 20,
+            y: 10
+          }
+        }
+      );
+      alertText.setOrigin(0.5);
+      alertText.setDepth(1);
+      this.time.delayedCall(5000, () => {
+        alertText.destroy();
+        this.scene.stop("PlayScene");
+      }, [], this);
+    });
   }
 }
 

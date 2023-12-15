@@ -64,6 +64,9 @@ const PERCENTAGE_OCCUPIED = 0.5;
 
 const sessionMap: Map<string, string> = new Map();
 const gameStartedSession: Map<string, boolean> = new Map();
+const activePlayersSession: Map<string, number> = new Map();
+
+let activePlayers: number;
 
 io.on("connection", (socket) => {
   if (newMaze === undefined) {
@@ -73,6 +76,7 @@ io.on("connection", (socket) => {
   socket.on("initPlayer", (playerInfo: { name: string; session: number, newSession: boolean }) => {
     if (playerInfo.newSession) {
       gameStartedSession.set(playerInfo.session.toString(), false);
+      activePlayers = 0;
     }
     if (!gameStartedSession.get(playerInfo.session.toString())) {
       logger.info(
@@ -81,6 +85,14 @@ io.on("connection", (socket) => {
       CreateNewPlayer(socket.id, playerInfo.name);
       sessionMap.set(socket.id, playerInfo.session.toString());
       socket.join(sessionMap.get(socket.id));
+      if( activePlayers == 0) {
+        activePlayers = 1;
+      }else {
+        activePlayers = activePlayersSession.get(playerInfo.session.toString()) + 1;
+      }
+      activePlayersSession.set(playerInfo.session.toString(), activePlayers)
+      console.log(activePlayersSession.get(playerInfo.session.toString()));
+
       io.to(socket.id).emit("game_maze", game_maze);
       socket.to(sessionMap.get(socket.id)).emit("newPlayer", players[socket.id]);
   
@@ -120,7 +132,16 @@ io.on("connection", (socket) => {
     delete players[socket.id];
     io.to(sessionMap.get(socket.id)).emit("disconnect_player", socket.id);
     socket.leave(sessionMap.get(socket.id));
+    
+
+    const aux = activePlayersSession.get(sessionMap.get(socket.id));
+    activePlayersSession.set(sessionMap.get(socket.id), aux - 1);
+
     sessionMap.delete(socket.id);
+  });
+
+  socket.on("playerGameOver", ()=>{
+
   });
 
   socket.on("playerMovement", (movementData) => {
@@ -137,6 +158,24 @@ io.on("connection", (socket) => {
     io.to(sessionMap.get(socket.id)).emit("changeScore", {
       player: players[socket.id],
     });
+    if(players[socket.id].lifes == 0) {
+      const aux = activePlayersSession.get(sessionMap.get(socket.id));
+      activePlayersSession.set(sessionMap.get(socket.id), aux - 1);
+      logger.info(
+        `End Game for the Session:  ${sessionMap.get(socket.id)}`
+      );
+      if((aux-1) == 1) {
+        const winner = Object.entries(players)
+        .filter(
+          ([key, _]) => (sessionMap.get(key) === sessionMap.get(socket.id))
+        )
+        .map(([key, value]) => {
+          return { key, ...value };
+        }).filter(player => player.lifes > 0);
+
+        io.to(sessionMap.get(socket.id)).emit("endGame", winner[0]);
+      }
+    }
   });
 });
 //For production
