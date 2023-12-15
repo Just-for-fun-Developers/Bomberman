@@ -73,6 +73,9 @@ io.on("connection", (socket) => {
     newMaze = createMaze(ROWS, COLS, PERCENTAGE_OCCUPIED);
     game_maze = { data: newMaze, columns: COLS, rows: ROWS };
   }
+  socket.on("sessionHash", ()=>{
+    socket.emit("sessionHash", gameStartedSession);
+  });
   socket.on("initPlayer", (playerInfo: { name: string; session: number, newSession: boolean }) => {
     if (playerInfo.newSession) {
       gameStartedSession.set(playerInfo.session.toString(), false);
@@ -91,7 +94,6 @@ io.on("connection", (socket) => {
         activePlayers = activePlayersSession.get(playerInfo.session.toString()) + 1;
       }
       activePlayersSession.set(playerInfo.session.toString(), activePlayers)
-      console.log(activePlayersSession.get(playerInfo.session.toString()));
 
       io.to(socket.id).emit("game_maze", game_maze);
       socket.to(sessionMap.get(socket.id)).emit("newPlayer", players[socket.id]);

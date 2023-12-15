@@ -23,7 +23,19 @@ class MenuScene extends BaseScene {
 
   create() {
     super.create();
-    this.playerName = prompt("Ingresa tu Nickname:");
+
+    this.playerName = localStorage.getItem('playerName');
+
+    while (!this.playerName || this.playerName.trim() === "") {
+      this.playerName = prompt("Ingresa tu Nickname:");
+
+      if (this.playerName === null) {
+        this.scene.start("MenuScene");
+        return;
+      }
+      this.playerName = this.playerName.trim();
+    }
+    localStorage.setItem('playerName', this.playerName);
     this.createMenu(this.menu, this.setupMenuEvents.bind(this));
   }
 

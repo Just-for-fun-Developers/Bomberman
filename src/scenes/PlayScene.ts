@@ -37,19 +37,55 @@ class PlayScene extends Phaser.Scene {
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
     // For Dev
     //this.socket = io('localhost:3000');
+    /* this.socket.emit("sessionHash");
+    this.socket.on("sessionHash", (HashSessions:Map<string, boolean>)=>{
+      if (this.newSession) {
+        const sessionHash = generateSessionHash();
+        this.session = sessionHash;
+      } else {
+        let sessionHash = "";
+        while (sessionHash.trim() === "") { 
+          sessionHash = prompt("Ingresa session hash:");
+          if(HashSessions.has(sessionHash)){
+            this.session = parseInt(sessionHash);
+            return;
+          }else{
+            sessionHash = "";
+          }
+          if (sessionHash === null) {
+            this.scene.start("MenuScene");
+            return;
+          }
+          
+        }
+      }
+      // Update the div with the player's session
+      const sessionDiv = document.getElementById("session-display");
+      if (sessionDiv) {
+        sessionDiv.innerText = `session Hash: ${this.session}`;
+      }
+    }); */
+
     if (this.newSession) {
       const sessionHash = generateSessionHash();
       this.session = sessionHash;
     } else {
-      const sessionHash = prompt("Ingresa session hash:");
-      this.session = parseInt(sessionHash);
+      let sessionHash = "";
+      while (sessionHash.trim() === "") { 
+        sessionHash = prompt("Ingresa session hash:");
+        if (sessionHash === null) {
+          this.scene.start("MenuScene");
+          return;
+        }
+        this.session = parseInt(sessionHash);
+      }
     }
     // Update the div with the player's session
     const sessionDiv = document.getElementById("session-display");
     if (sessionDiv) {
       sessionDiv.innerText = `session Hash: ${this.session}`;
     }
-
+    
     this.socket.emit("initPlayer", {
       name: this.playerName,
       session: this.session,
