@@ -33,16 +33,20 @@ class PlayScene extends Phaser.Scene {
   }
 
   create() {
-    // For production
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
-    // For Dev
-    //this.socket = io('localhost:3000');
     if (this.newSession) {
       const sessionHash = generateSessionHash();
       this.session = sessionHash;
     } else {
-      const sessionHash = prompt("Ingresa session hash:");
-      this.session = parseInt(sessionHash);
+      let sessionHash = "";
+      while (sessionHash.trim() === "") {
+        sessionHash = prompt("Ingresa session hash:");
+        if (sessionHash === null) {
+          this.scene.start("MenuScene");
+          return;
+        }
+        this.session = parseInt(sessionHash);
+      }
     }
     // Update the div with the player's session
     const sessionDiv = document.getElementById("session-display");
@@ -53,6 +57,10 @@ class PlayScene extends Phaser.Scene {
     this.socket.emit("initPlayer", {
       name: this.playerName,
       session: this.session,
+      newSession: this.newSession,
+    });
+    this.socket.on("gameAlreadyStarted", () => {
+      this.scene.start("MenuScene");
     });
 
     this.startGameLogic();
@@ -73,6 +81,8 @@ class PlayScene extends Phaser.Scene {
     this.bombInteraction();
 
     this.rewriteScore();
+
+    this.endGame();
   }
 
   startGameLogic() {
@@ -89,7 +99,6 @@ class PlayScene extends Phaser.Scene {
 
     this.socket.on("start_game", () => {
       this.startGame = true;
-      console.log("start game!!!!");
       document.getElementById("PlayButton").style.display = "none";
     });
   }
@@ -374,7 +383,9 @@ class PlayScene extends Phaser.Scene {
   rewriteScore() {
     this.socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
       if (playerInfo.player.lifes === 0) {
-        this.amAlive = false;
+        if (this.player.getData("playerId") == playerInfo.player.playerId) {
+          this.amAlive = false;
+        }
         this.otherPlayers
           .getChildren()
           .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
@@ -600,6 +611,35 @@ class PlayScene extends Phaser.Scene {
           textObject.setVisible(true);
         }
       });
+  }
+
+  endGame() {
+    this.socket.on("endGame", (winner: PlayerInfo) => {
+      let text = "¡Ganaste! :)";
+      if (this.player.getData("playerId") != winner.playerId) {
+        text = "Perdiste... :(";
+      }
+      const alertText = this.add.text(1100 / 2, 800 / 2, text, {
+        fontSize: "32px",
+        color: "#fff",
+        backgroundColor: "#000",
+        padding: {
+          x: 20,
+          y: 10,
+        },
+      });
+      alertText.setOrigin(0.5);
+      alertText.setDepth(1);
+      this.time.delayedCall(
+        5000,
+        () => {
+          alertText.destroy();
+          this.scene.stop("PlayScene");
+        },
+        [],
+        this
+      );
+    });
   }
 }
 
