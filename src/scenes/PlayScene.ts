@@ -33,45 +33,13 @@ class PlayScene extends Phaser.Scene {
   }
 
   create() {
-    // For production
     this.socket = io(`${process.env.SERVER_HOST}:${process.env.SERVER_PORT}`);
-    // For Dev
-    //this.socket = io('localhost:3000');
-    /* this.socket.emit("sessionHash");
-    this.socket.on("sessionHash", (HashSessions:Map<string, boolean>)=>{
-      if (this.newSession) {
-        const sessionHash = generateSessionHash();
-        this.session = sessionHash;
-      } else {
-        let sessionHash = "";
-        while (sessionHash.trim() === "") { 
-          sessionHash = prompt("Ingresa session hash:");
-          if(HashSessions.has(sessionHash)){
-            this.session = parseInt(sessionHash);
-            return;
-          }else{
-            sessionHash = "";
-          }
-          if (sessionHash === null) {
-            this.scene.start("MenuScene");
-            return;
-          }
-          
-        }
-      }
-      // Update the div with the player's session
-      const sessionDiv = document.getElementById("session-display");
-      if (sessionDiv) {
-        sessionDiv.innerText = `session Hash: ${this.session}`;
-      }
-    }); */
-
     if (this.newSession) {
       const sessionHash = generateSessionHash();
       this.session = sessionHash;
     } else {
       let sessionHash = "";
-      while (sessionHash.trim() === "") { 
+      while (sessionHash.trim() === "") {
         sessionHash = prompt("Ingresa session hash:");
         if (sessionHash === null) {
           this.scene.start("MenuScene");
@@ -85,13 +53,13 @@ class PlayScene extends Phaser.Scene {
     if (sessionDiv) {
       sessionDiv.innerText = `session Hash: ${this.session}`;
     }
-    
+
     this.socket.emit("initPlayer", {
       name: this.playerName,
       session: this.session,
-      newSession: this.newSession
+      newSession: this.newSession,
     });
-    this.socket.on('gameAlreadyStarted', () => {
+    this.socket.on("gameAlreadyStarted", () => {
       this.scene.start("MenuScene");
     });
 
@@ -415,7 +383,9 @@ class PlayScene extends Phaser.Scene {
   rewriteScore() {
     this.socket.on("changeScore", (playerInfo: { player: PlayerInfo }) => {
       if (playerInfo.player.lifes === 0) {
-        this.amAlive = false;
+        if (this.player.getData("playerId") == playerInfo.player.playerId) {
+          this.amAlive = false;
+        }
         this.otherPlayers
           .getChildren()
           .forEach((otherPlayer: Phaser.Physics.Arcade.Sprite) => {
@@ -644,31 +614,31 @@ class PlayScene extends Phaser.Scene {
   }
 
   endGame() {
-    this.socket.on("endGame", (winner: PlayerInfo)=>{
-      let text = '¡Ganaste! :)';
-      if( this.player.getData("playerId") != winner.playerId){
-        text = 'Perdiste... :('
+    this.socket.on("endGame", (winner: PlayerInfo) => {
+      let text = "¡Ganaste! :)";
+      if (this.player.getData("playerId") != winner.playerId) {
+        text = "Perdiste... :(";
       }
-      const alertText = this.add.text(
-        1100 / 2,
-        800 / 2,
-        text,
-        {
-          fontSize: '32px',
-          color: '#fff',
-          backgroundColor: '#000',
-          padding: {
-            x: 20,
-            y: 10
-          }
-        }
-      );
+      const alertText = this.add.text(1100 / 2, 800 / 2, text, {
+        fontSize: "32px",
+        color: "#fff",
+        backgroundColor: "#000",
+        padding: {
+          x: 20,
+          y: 10,
+        },
+      });
       alertText.setOrigin(0.5);
       alertText.setDepth(1);
-      this.time.delayedCall(5000, () => {
-        alertText.destroy();
-        this.scene.stop("PlayScene");
-      }, [], this);
+      this.time.delayedCall(
+        5000,
+        () => {
+          alertText.destroy();
+          this.scene.stop("PlayScene");
+        },
+        [],
+        this
+      );
     });
   }
 }
